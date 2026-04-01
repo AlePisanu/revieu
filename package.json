@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "description": "AI-powered code review sidebar for GitHub",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "node build.js --watch",
     "build": "node build.js",

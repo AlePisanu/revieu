@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "Revieu",
+  "version": "0.1.0",
+  "description": "AI-powered code review sidebar for GitHub",
+  "permissions": ["storage", "activeTab", "scripting"],
+  "host_permissions": [
+    "https://github.com/*",
+    "https://raw.githubusercontent.com/*",
+    "https://api.github.com/*",
+    "https://api.anthropic.com/*",
+    "https://generativelanguage.googleapis.com/*"
+  ],
+  "background": {
+    "service_worker": "src/background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://github.com/*/pull/*"],
+      "js": ["src/content.js"],
+      "css": ["src/ui/sidebar.css"]
+    }
+  ],
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_title": "Revieu"
+  }
+}
