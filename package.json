@@ -1,0 +1,17 @@
+{
+  "name": "revieu",
+  "version": "0.1.0",
+  "description": "AI-powered code review sidebar for GitHub",
+  "private": true,
+  "scripts": {
+    "dev": "node build.js --watch",
+    "build": "node build.js",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0",
+    "typescript": "^5.8.0",
+    "vitest": "^3.1.0"
+  }
+}
