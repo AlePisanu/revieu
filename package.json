@@ -11,6 +11,7 @@
     "test:watch": "vitest"
   },
   "devDependencies": {
+    "@types/chrome": "^0.1.38",
     "esbuild": "^0.25.0",
     "typescript": "^5.8.0",
     "vitest": "^3.1.0"
