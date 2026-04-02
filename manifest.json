@@ -6,6 +6,7 @@
   "permissions": ["storage", "activeTab", "scripting"],
   "host_permissions": [
     "https://github.com/*",
+    "https://patch-diff.githubusercontent.com/*",
     "https://raw.githubusercontent.com/*",
     "https://api.github.com/*",
     "https://api.anthropic.com/*",
@@ -16,7 +17,7 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://github.com/*/pull/*"],
+      "matches": ["https://github.com/*/*/pull/*"],
       "js": ["src/content.js"],
       "css": ["src/ui/sidebar.css"]
     }

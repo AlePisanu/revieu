@@ -1,0 +1,235 @@
+#revieu-sidebar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 380px;
+  height: 100vh;
+  background: #ffffff;
+  border-left: 1px solid #d1d5db;
+  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.08);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  color: #1f2328;
+  transition: transform 0.2s ease;
+}
+
+#revieu-sidebar.revieu-hidden {
+  transform: translateX(100%);
+}
+
+/* Header */
+.revieu-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid #d1d5db;
+  background: #f6f8fa;
+}
+
+.revieu-title {
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.revieu-close {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #656d76;
+  padding: 0 4px;
+  line-height: 1;
+}
+
+.revieu-close:hover {
+  color: #1f2328;
+}
+
+/* Body */
+.revieu-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Controls */
+.revieu-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.revieu-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  font-weight: 500;
+  color: #656d76;
+}
+
+.revieu-select {
+  padding: 4px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #ffffff;
+  font-size: 13px;
+  color: #1f2328;
+  cursor: pointer;
+}
+
+.revieu-select:focus {
+  outline: 2px solid #0969da;
+  outline-offset: -1px;
+}
+
+/* Analyze button */
+.revieu-analyze-btn {
+  width: 100%;
+  padding: 10px 16px;
+  background: #238636;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.revieu-analyze-btn:hover:not(:disabled) {
+  background: #2ea043;
+}
+
+.revieu-analyze-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Output area */
+.revieu-output {
+  flex: 1;
+  line-height: 1.5;
+  word-wrap: break-word;
+}
+
+/* Footer — copy button and token hint */
+.revieu-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 8px;
+  border-top: 1px solid #d1d5db;
+}
+
+.revieu-hidden-el {
+  display: none;
+}
+
+.revieu-copy-btn {
+  padding: 6px 12px;
+  background: #f6f8fa;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  color: #1f2328;
+}
+
+.revieu-copy-btn:hover {
+  background: #eaeef2;
+}
+
+.revieu-token-hint {
+  font-size: 12px;
+  color: #656d76;
+}
+
+/* Error and warning messages */
+.revieu-error {
+  color: #cf222e;
+  font-size: 13px;
+  padding: 8px 12px;
+  background: #ffebe9;
+  border-radius: 6px;
+}
+
+.revieu-warning {
+  color: #9a6700;
+  font-size: 13px;
+  padding: 8px 12px;
+  background: #fff8c5;
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+
+/* File selector (large diffs) */
+.revieu-file-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.revieu-file-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.revieu-line-count {
+  color: #656d76;
+  font-size: 12px;
+}
+
+.revieu-analyze-selected-btn {
+  width: 100%;
+  padding: 8px 12px;
+  background: #238636;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.revieu-analyze-selected-btn:hover {
+  background: #2ea043;
+}
+
+/* Toggle tab */
+#revieu-tab {
+  position: fixed;
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
+  writing-mode: vertical-rl;
+  background: #238636;
+  color: #ffffff;
+  padding: 12px 6px;
+  border-radius: 6px 0 0 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  z-index: 9998;
+  letter-spacing: 1px;
+  transition: opacity 0.2s ease;
+}
+
+#revieu-tab:hover {
+  background: #2ea043;
+}
+
+#revieu-tab.revieu-tab-hidden {
+  opacity: 0;
+  pointer-events: none;
+}

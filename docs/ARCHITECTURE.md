@@ -295,3 +295,41 @@ If total diff lines exceed 300, the analyzer throws `TOO_LARGE` and the sidebar 
 - In Full context mode (public repos), file content is fetched from `raw.githubusercontent.com` — GitHub's own CDN
 - No eval(), no remote code execution, strict CSP enforced
 - GitHub token is optional, stored in `chrome.storage.sync`, used only for private repo full context
+
+
+  ┌───────────────┬───────────────────┬──────────────────────┐   
+  │     File      │       Ruolo       │       Pattern        │   
+  ├───────────────┼───────────────────┼──────────────────────┤   
+  │               │ Contratti         │ Dependency           │   
+  │ types.ts      │ condivisi         │ Inversion, Strategy, │   
+  │               │                   │  Adapter             │   
+  ├───────────────┼───────────────────┼──────────────────────┤   
+  │               │ Service worker,   │ Message Bus,         │   
+  │ background.ts │ centralina        │ Discriminated Union  │   
+  │               │ messaggi          │                      │   
+  ├───────────────┼───────────────────┼──────────────────────┤   
+  │ github.ts     │ Estrae dati da    │ Adapter (DOM + API)  │   
+  │               │ GitHub            │                      │   
+  ├───────────────┼───────────────────┼──────────────────────┤   
+  │ parser.ts     │ Arricchisce i     │ Pipeline step        │   
+  │               │ diff              │                      │   
+  ├───────────────┼───────────────────┼──────────────────────┤   
+  │ prompt.ts     │ Costruisce i      │ Template/Builder     │   
+  │               │ messaggi per l'AI │                      │   
+  ├───────────────┼───────────────────┼──────────────────────┤   
+  │ analyzer.ts   │ Orchestratore     │ Facade, Factory      │   
+  │               │ della review      │                      │   
+  ├───────────────┼───────────────────┼──────────────────────┤   
+  │ anthropic.ts  │ Provider Claude   │ Strategy             │   
+  ├───────────────┼───────────────────┼──────────────────────┤   
+  │ gemini.ts     │ Provider Gemini   │ Strategy +           │   
+  │               │                   │ retry/throttle       │   
+  ├───────────────┼───────────────────┼──────────────────────┤   
+  │ sidebar.ts    │ UI sidebar        │ Controller           │   
+  │               │ iniettata         │                      │   
+  ├───────────────┼───────────────────┼──────────────────────┤   
+  │ content.ts    │ Entry point       │ SPA observer         │   
+  │               │ content script    │                      │   
+  ├───────────────┼───────────────────┼──────────────────────┤   
+  │ popup.ts      │ Popup settings    │ Message-based I/O    │   
+  └───────────────┴───────────────────┴──────────────────────┘
