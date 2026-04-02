@@ -87,8 +87,8 @@ export const createSidebar = (): HTMLElement => {
           </select>
         </label>
       </div>
-      <button class="revieu-analyze-btn" disabled>Analyze PR</button>
       <div class="revieu-output"></div>
+      <button class="revieu-analyze-btn" disabled>Analyze PR</button>
       <div class="revieu-footer revieu-hidden-el">
         <button class="revieu-copy-btn">Copy review</button>
         <span class="revieu-token-hint"></span>
