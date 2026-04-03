@@ -47,13 +47,13 @@ Rules:
 
 Output format (strict):
 
-## 🔴 Critical
+## Critical
 - [file]&#58; issue + short explanation
 
-## 🟡 Improvements
+## Improvements
 - [file]&#58; suggestion
 
-## 🟢 Minor
+## Minor
 - optional small notes
 
 If no issues, say: "No significant issues found."

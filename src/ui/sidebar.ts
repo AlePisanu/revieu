@@ -270,6 +270,7 @@ export const wireAnalyzer = (adapter: Adapter): void => {
             // Non è il più efficiente, ma `marked` è veloce e garantisce
             // che il rendering sia sempre coerente (no artefatti parziali).
             output.innerHTML = marked.parse(rawMarkdown) as string
+            colorizeHeaders(output) 
           },
         })
         showFooter(rawMarkdown)
@@ -378,6 +379,7 @@ const renderFileSelector = (
         onChunk: (text) => {
           rawMarkdown += text
           output.innerHTML = marked.parse(rawMarkdown) as string
+          colorizeHeaders(output) 
         },
         selectedFiles,
         // Passa i file già parsati per evitare di ri-estrarre il diff
@@ -387,5 +389,14 @@ const renderFileSelector = (
       const message = err instanceof Error ? err.message : 'An unexpected error occurred.'
       output.innerHTML = `<p class="revieu-error">${message}</p>`
     }
+  })
+}
+
+const colorizeHeaders = (el: HTMLElement) => {
+  el.querySelectorAll('h2').forEach((h) => {
+    const text = h.textContent?.toLowerCase() ?? ''
+    if (text.includes('critical')) h.classList.add('revieu-critical')
+    else if (text.includes('improvement')) h.classList.add('revieu-improvements')
+    else if (text.includes('minor')) h.classList.add('revieu-minor')
   })
 }

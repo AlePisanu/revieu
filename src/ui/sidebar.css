@@ -151,27 +151,6 @@
   cursor: not-allowed;
 }
 
-/* OUTPUT */
-.revieu-output {
-  flex: 1;
-
-  line-height: 1.6;
-  font-size: 13px;
-  color: #1e293b;
-
-  white-space: pre-wrap;
-}
-
-.revieu-output ul li::marker {
-  padding-left: 10px;
-  unicode-bidi: isolate;
-    font-variant-numeric: tabular-nums;
-    text-transform: none;
-    text-indent: 0px !important;
-    text-align: start !important;
-    text-align-last: auto !important;
-}
-
 /* FOOTER */
 .revieu-footer {
   display: flex;
@@ -345,4 +324,68 @@
 .revieu-logo {
   width: 70px;
   height: auto;
+}
+
+/* OUTPUT */
+.revieu-output {
+  flex: 1;
+
+  line-height: normal;
+  font-size: 13px;
+  color: #1e293b;
+
+  white-space: pre-wrap;
+}
+
+/* OUTPUT — headings */
+
+.revieu-output h2 {
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  margin: 20px 0 0;
+  opacity: 1;
+}
+
+.revieu-output h2:first-child {
+  margin-top: 0;
+}
+
+/* OUTPUT — list items */
+.revieu-output ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+}
+
+.revieu-output ul li {
+  padding: 10px 12px;
+  border-top-right-radius: 8px;
+  border-bottom-right-radius: 8px;
+  background: #f8fafc;
+  border: 1px solid #f1f5f9;
+  border-left: 3px solid transparent;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #1e293b;
+}
+
+.revieu-critical + ul li { border-left-color: #e5534b; }
+.revieu-improvements + ul li { border-left-color: #d4a72c; }
+.revieu-minor + ul li { border-left-color: #57ab5a; }
+
+/* code inline */
+.revieu-output code {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 12px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  padding: 1px 5px;
+  color: #6366f1;
 }
