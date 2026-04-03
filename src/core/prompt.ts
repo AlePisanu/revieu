@@ -37,6 +37,8 @@ Focus on:
 - unintended side effects
 - architecture/design issues
 
+Pay attention to the fact that the diff has - for deletion and + for addition, check everytime that duplicates are correct and not false positives.
+
 Rules:
 - Be concise and direct
 - No greetings or filler text
@@ -150,20 +152,9 @@ export const buildUserMessage = (
 
     // Context lines: codice invariato attorno alle modifiche (~3 righe per hunk).
     // Presente anche in mode "diff" — viene dal diff unificato gratis.
-    if (file.context.length > 0) {
-      parts.push('**Surrounding context:**')
-      for (const line of file.context) {
-        parts.push(`  ${line}`)
-      }
-    }
-
-    // Le righe effettivamente modificate
-    parts.push('**Modified lines:**')
-    for (const line of file.additions) {
-      parts.push(`+ ${line}`)
-    }
-    for (const line of file.deletions) {
-      parts.push(`- ${line}`)
+    parts.push('**Diff:**')
+    for (const line of file.rawLines) {
+      parts.push(line)
     }
   }
 

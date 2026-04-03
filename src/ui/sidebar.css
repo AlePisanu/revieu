@@ -341,3 +341,8 @@
   opacity: 0;
   pointer-events: none;
 }
+
+.revieu-logo {
+  width: 70px;
+  height: auto;
+}

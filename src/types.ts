@@ -43,6 +43,8 @@ export interface RawDiff {
    * Popolato solo in mode "full" quando si fa fetch del file intero via API.
    */
   fullContent?: string
+
+  rawLines: string[] 
 }
 
 /**
@@ -62,6 +64,7 @@ export interface DiffFile {
   fullLineCount: number | null
   /** Somma di additions + deletions — usato per stimare la dimensione del diff */
   totalLines: number
+  rawLines: string[]
 }
 
 // ---------------------------------------------------------------------------

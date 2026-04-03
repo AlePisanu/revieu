@@ -59,7 +59,7 @@ export const createSidebar = (): HTMLElement => {
   sidebar.id = SIDEBAR_ID
   sidebar.innerHTML = `
     <div class="revieu-header">
-      <span class="revieu-title">Revieu</span>
+      <img src="${chrome.runtime.getURL('icons/logo-text.png')}" alt="Revieu" class="revieu-logo" />
       <button class="revieu-close" aria-label="Close sidebar">&times;</button>
     </div>
     <div class="revieu-body">
@@ -99,7 +99,14 @@ export const createSidebar = (): HTMLElement => {
   // Tab laterale — sempre visibile sul bordo destro, apre la sidebar al click
   const tab = document.createElement('div')
   tab.id = TAB_ID
-  tab.textContent = 'Revieu'
+
+  const img = document.createElement('img')
+  img.src = chrome.runtime.getURL('icons/logo-48.png')
+  img.alt = 'Revieu'
+  img.style.width = '30px'
+  img.style.height = '30px'
+
+  tab.appendChild(img)
   tab.setAttribute('role', 'button')
   tab.setAttribute('aria-label', 'Open Revieu sidebar')
 

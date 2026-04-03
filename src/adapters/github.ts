@@ -165,7 +165,7 @@ export const parseUnifiedDiff = (diffText: string): RawDiff[] => {
         continue
       }
 
-      current = current ?? { path, additions: [], deletions: [], context: [] }
+      current = current ?? { path, additions: [], deletions: [], context: [], rawLines: [] }
       current.path = path
       continue
     }
@@ -190,10 +190,13 @@ export const parseUnifiedDiff = (diffText: string): RawDiff[] => {
 
     if (marker === '+') {
       current.additions.push(content)
+      current.rawLines.push(`+${content}`)  // ← aggiungi
     } else if (marker === '-') {
       current.deletions.push(content)
+      current.rawLines.push(`-${content}`)  // ← aggiungi
     } else if (marker === ' ') {
       current.context.push(content)
+      current.rawLines.push(` ${content}`)  // ← aggiungi
     }
   }
 

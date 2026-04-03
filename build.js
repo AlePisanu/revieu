@@ -17,6 +17,7 @@ const copyStaticFiles = () => {
     { from: 'manifest.json', to: 'manifest.json' },
     { from: 'popup/popup.html', to: 'popup/popup.html' },
     { from: 'src/ui/sidebar.css', to: 'src/ui/sidebar.css' },
+    { from: 'icons/', to: 'icons/' },
   ]
 
   for (const file of staticFiles) {
@@ -25,7 +26,12 @@ const copyStaticFiles = () => {
     fs.mkdirSync(destDir, { recursive: true })
 
     if (fs.existsSync(file.from)) {
-      fs.copyFileSync(file.from, dest)
+      const isDir = fs.statSync(file.from).isDirectory()
+      if (isDir) {
+        fs.cpSync(file.from, dest, { recursive: true })
+      } else {
+        fs.copyFileSync(file.from, dest)
+      }
     }
   }
 }

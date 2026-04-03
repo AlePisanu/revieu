@@ -88,5 +88,6 @@ export const parseDiff = (rawDiffs: RawDiff[]): DiffFile[] => {
     fullContent: raw.fullContent ?? null,
     fullLineCount: raw.fullContent?.split('\n').length ?? null,
     totalLines: raw.additions.length + raw.deletions.length,
+    rawLines: raw.rawLines,
   }))
 }
