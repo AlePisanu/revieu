@@ -372,9 +372,6 @@ export const wireAnalyzer = (adapter: Adapter): void => {
         const message = err instanceof Error ? err.message : 'An unexpected error occurred.'
         output.innerHTML = `<p class="revieu-error">${message}</p>`
         showClearButton()
-      } finally {
-        btn.disabled = false
-        btn.innerHTML = `${PR_ICON} Analyze PR`
       }
     })
   })

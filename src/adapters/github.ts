@@ -347,49 +347,59 @@ export class GitHubAdapter implements Adapter {
   /**
    * Scarica il contenuto completo di un file dalla PR (mode "Full context").
    *
-   * Come funziona:
-   * 1. Costruisce la URL dell'API GitHub Contents:
-   *    https://api.github.com/repos/{owner}/{repo}/contents/{path}?ref=pull/{pr}/head
-   * 2. Il ref "pull/{number}/head" è un ref Git speciale di GitHub che punta
-   *    sempre all'ultimo commit della PR — non serve conoscere il nome del branch
-   * 3. Il fetch passa dal background script (evita CORS)
-   * 4. Se c'è un GitHub token in storage, lo include nell'header Authorization
-   *    (necessario per repo private, opzionale per pubbliche)
+   * Strategia a due tentativi:
+   * 1. raw.githubusercontent.com — più veloce, rate limit molto più alto dell'API
+   * 2. Fallback: GitHub Contents API — più lento, 60 req/ora senza token
    *
-   * Se il fetch fallisce (repo privata senza token, file non trovato, ecc.)
-   * ritorna { content: null } e l'analyzer continuerà con il solo diff.
+   * Il ref "refs/pull/{number}/head" è un ref Git speciale di GitHub che punta
+   * sempre all'ultimo commit della PR — non serve conoscere il nome del branch.
+   *
+   * Se entrambi falliscono, ritorna { content: null } e l'analyzer mostrerà
+   * un warning all'utente.
    */
   async fetchFullFile(path: string): Promise<{
     content: string | null
     source: 'raw' | 'api' | 'expand' | null
   }> {
+    const prInfo = this.getPrInfo()
+    if (!prInfo) return { content: null, source: null }
+
+    const { owner, repo, pr } = prInfo
+
+    // Legge il token GitHub dallo storage (può essere vuoto)
+    const settings = await chrome.runtime.sendMessage({ type: 'GET_SETTINGS' })
+    const token = settings?.githubToken || ''
+
+    // --- Tentativo 1: raw.githubusercontent.com ---
+    // Rate limit ~1000s/ora, no overhead API JSON, risposta diretta con il file grezzo.
     try {
-      const prInfo = this.getPrInfo()
-      if (!prInfo) return { content: null, source: null }
+      const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/refs/pull/${pr}/head/${path}`
+      const rawResponse: { ok: boolean; status: number; text?: string } =
+        await chrome.runtime.sendMessage({
+          type: 'FETCH_GITHUB_FILE',
+          payload: { url: rawUrl, token },
+        })
 
-      const { owner, repo, pr } = prInfo
-      const ref = `pull/${pr}/head`
-      const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${ref}`
+      if (rawResponse?.ok && rawResponse.text) {
+        return { content: rawResponse.text, source: 'raw' }
+      }
+    } catch { /* fallthrough al tentativo 2 */ }
 
-      // Legge il token GitHub dallo storage (può essere vuoto)
-      const settings = await chrome.runtime.sendMessage({ type: 'GET_SETTINGS' })
-      const token = settings?.githubToken || ''
+    // --- Tentativo 2: GitHub Contents API ---
+    // Più lento e con rate limit più basso (60/ora senza token, 5000/ora con token).
+    try {
+      const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=pull/${pr}/head`
+      const apiResponse: { ok: boolean; status: number; text?: string } =
+        await chrome.runtime.sendMessage({
+          type: 'FETCH_GITHUB_FILE',
+          payload: { url: apiUrl, token },
+        })
 
-      const response: {
-        ok: boolean
-        status: number
-        text?: string
-        error?: string
-      } = await chrome.runtime.sendMessage({
-        type: 'FETCH_GITHUB_FILE',
-        payload: { url: apiUrl, token },
-      })
+      if (apiResponse?.ok && apiResponse.text) {
+        return { content: apiResponse.text, source: 'api' }
+      }
+    } catch { /* nessun fallback rimasto */ }
 
-      if (!response?.ok || !response.text) return { content: null, source: null }
-
-      return { content: response.text, source: 'api' }
-    } catch {
-      return { content: null, source: null }
-    }
+    return { content: null, source: null }
   }
 }
