@@ -360,9 +360,6 @@ export const wireAnalyzer = (adapter: Adapter): void => {
         const message = err instanceof Error ? err.message : 'An unexpected error occurred.'
         output.innerHTML = `<p class="revieu-error">${message}</p>`
         showClearButton()
-      } finally {
-        btn.disabled = false
-        btn.innerHTML = `${PR_ICON} Analyze PR`
       }
     })
   })
@@ -423,10 +420,9 @@ const renderFileSelector = (
   settings: Record<string, string>
 ): void => {
   const analyzeBtn = getAnalyzeButton()
-  console.log(Boolean(analyzeBtn))
   if (analyzeBtn) {
     analyzeBtn.disabled = true
-    analyzeBtn.innerHTML = `${PR_ICON} Analyze PRe`
+    analyzeBtn.innerHTML = `${PR_ICON} Analyzing...`
   }
   const list = files
     .map((f) => `
@@ -442,7 +438,10 @@ const renderFileSelector = (
   output.innerHTML = `
     <p class="revieu-warning">Diff too large (${files.reduce((s, f) => s + f.totalLines, 0)} lines). Select files to analyze:</p>
     <div class="revieu-file-list">${list}</div>
-    <button class="revieu-analyze-selected-btn">Analyze selected</button>
+    <div class="revieu-btn-row">
+      <button class="revieu-analyze-selected-btn">Analyze selected</button>
+      <button class="revieu-clear-btn" title="Clear output">${TRASH_ICON}</button>
+    </div>
   `
 
   const selectedBtn = output.querySelector('.revieu-analyze-selected-btn') as HTMLButtonElement
@@ -476,6 +475,10 @@ const renderFileSelector = (
         // Passa i file già parsati per evitare di ri-estrarre il diff
         initialFiles: files,
       })
+      if (analyzeBtn) {
+        analyzeBtn.disabled = false
+        analyzeBtn.innerHTML = `${PR_ICON} Analyze PR`
+      }
       showFooter(rawMarkdown)
       showClearButton()
     } catch (err) {
