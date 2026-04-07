@@ -57,44 +57,6 @@ export const createSidebar = (): HTMLElement => {
 
   const sidebar = document.createElement('div')
   sidebar.id = SIDEBAR_ID
-  // sidebar.innerHTML = `
-  //   <div class="revieu-header">
-  //     <img src="${chrome.runtime.getURL('icons/logo-text-nobg.png')}" alt="Revieu" class="revieu-logo" />
-  //     <button class="revieu-close" aria-label="Close sidebar">&times;</button>
-  //   </div>
-  //   <div class="revieu-body">
-  //     <div class="revieu-controls">
-  //       <label class="revieu-label">
-  //         Mode
-  //         <select class="revieu-select" data-setting="mode">
-  //           <option value="diff">Diff only</option>
-  //           <option value="full">Full context</option>
-  //         </select>
-  //       </label>
-  //       <label class="revieu-label">
-  //         Tone
-  //         <select class="revieu-select" data-setting="tone">
-  //           <option value="balanced">Balanced</option>
-  //           <option value="strict">Strict</option>
-  //           <option value="security">Security-focused</option>
-  //         </select>
-  //       </label>
-  //       <label class="revieu-label">
-  //         Provider
-  //         <select class="revieu-select" data-setting="provider">
-  //           <option value="anthropic">Claude</option>
-  //           <option value="gemini">Gemini</option>
-  //         </select>
-  //       </label>
-  //     </div>
-  //     <div class="revieu-output"></div>
-  //     <button class="revieu-analyze-btn" disabled>Analyze PR</button>
-  //     <div class="revieu-footer revieu-hidden-el">
-  //       <button class="revieu-copy-btn">Copy review</button>
-  //       <span class="revieu-token-hint"></span>
-  //     </div>
-  //   </div>
-  // `
 
   sidebar.innerHTML = `
   <div class="revieu-header">
@@ -138,7 +100,10 @@ export const createSidebar = (): HTMLElement => {
   </div>
   <div class="revieu-body">
     <div class="revieu-output"></div>
-    <button class="revieu-analyze-btn" disabled>Analyze PR</button>
+    <div class="revieu-btn-row">
+      <button class="revieu-analyze-btn" disabled>Analyze PR</button>
+      <button class="revieu-clear-btn" title="Clear output">✕</button>
+    </div>
     <div class="revieu-footer revieu-hidden-el">
       <button class="revieu-copy-btn">Copy review</button>
       <span class="revieu-token-hint"></span>
@@ -169,35 +134,44 @@ export const createSidebar = (): HTMLElement => {
   closeBtn.addEventListener('click', () => toggleSidebar(false))
 
   const settingsTrigger = sidebar.querySelector('.revieu-settings-trigger') as HTMLElement
-const settingsPopover = sidebar.querySelector('.revieu-settings-popover') as HTMLElement
+  const settingsPopover = sidebar.querySelector('.revieu-settings-popover') as HTMLElement
 
-const closePopover = () => {
-  settingsPopover.classList.remove('revieu-popover-open')
-  settingsTrigger.setAttribute('aria-expanded', 'false')
-  settingsTrigger.classList.remove('revieu-trigger-open')
-}
-
-settingsTrigger.addEventListener('click', (e) => {
-  e.stopPropagation()
-  const isOpen = settingsPopover.classList.contains('revieu-popover-open')
-  if (isOpen) {
-    closePopover()
-  } else {
-    settingsPopover.classList.add('revieu-popover-open')
-    settingsTrigger.setAttribute('aria-expanded', 'true')
-    settingsTrigger.classList.add('revieu-trigger-open')
+  const closePopover = () => {
+    settingsPopover.classList.remove('revieu-popover-open')
+    settingsTrigger.setAttribute('aria-expanded', 'false')
+    settingsTrigger.classList.remove('revieu-trigger-open')
   }
-})
 
-// Chiude cliccando fuori
-document.addEventListener('click', (e) => {
-  if (!settingsPopover.contains(e.target as Node) && e.target !== settingsTrigger) {
-    closePopover()
-  }
-})
+  settingsTrigger.addEventListener('click', (e) => {
+    e.stopPropagation()
+    const isOpen = settingsPopover.classList.contains('revieu-popover-open')
+    if (isOpen) {
+      closePopover()
+    } else {
+      settingsPopover.classList.add('revieu-popover-open')
+      settingsTrigger.setAttribute('aria-expanded', 'true')
+      settingsTrigger.classList.add('revieu-trigger-open')
+    }
+  })
 
-// Evita che click dentro il popover lo chiudano
-settingsPopover.addEventListener('click', (e) => e.stopPropagation())
+  // Chiude cliccando fuori
+  document.addEventListener('click', (e) => {
+    if (!settingsPopover.contains(e.target as Node) && e.target !== settingsTrigger) {
+      closePopover()
+    }
+  })
+
+  // Evita che click dentro il popover lo chiudano
+  settingsPopover.addEventListener('click', (e) => e.stopPropagation())
+
+  // Wire clear button — persistente, non serve cloneNode
+  const clearBtn = getClearButton()
+  clearBtn?.addEventListener('click', () => {
+    const output = getOutputElement()
+    if (output) output.innerHTML = ''
+    hideFooter()
+    hideClearButton()
+  })
 
   // Parte chiusa di default
   sidebar.classList.add('revieu-hidden')
@@ -288,6 +262,21 @@ export const getAnalyzeButton = (): HTMLButtonElement | null => {
   return document.querySelector(`#${SIDEBAR_ID} .revieu-analyze-btn`)
 }
 
+/** Ritorna il bottone "Clear" */
+const getClearButton = (): HTMLButtonElement | null => {
+  return document.querySelector(`#${SIDEBAR_ID} .revieu-clear-btn`)
+}
+
+/** Mostra il bottone clear con animazione */
+const showClearButton = (): void => {
+  getClearButton()?.classList.add('revieu-clear-visible')
+}
+
+/** Nasconde il bottone clear con animazione */
+const hideClearButton = (): void => {
+  getClearButton()?.classList.remove('revieu-clear-visible')
+}
+
 // ===========================================================================
 // COLLEGAMENTO ANALYZE BUTTON → ANALYZER
 // ===========================================================================
@@ -332,6 +321,7 @@ export const wireAnalyzer = (adapter: Adapter): void => {
 
       output.innerHTML = ''
       hideFooter()
+      hideClearButton()
       btn.disabled = true
       btn.textContent = 'Analyzing...'
 
@@ -351,19 +341,22 @@ export const wireAnalyzer = (adapter: Adapter): void => {
             // Non è il più efficiente, ma `marked` è veloce e garantisce
             // che il rendering sia sempre coerente (no artefatti parziali).
             output.innerHTML = marked.parse(rawMarkdown) as string
-            colorizeHeaders(output) 
+            colorizeHeaders(output)
           },
         })
         showFooter(rawMarkdown)
+        showClearButton()
       } catch (err) {
         // TooLargeError: il diff supera il limite → mostra selettore file
         if (err instanceof TooLargeError) {
           renderFileSelector(output, err.files, adapter, settings)
+          showClearButton()
           return
         }
 
         const message = err instanceof Error ? err.message : 'An unexpected error occurred.'
         output.innerHTML = `<p class="revieu-error">${message}</p>`
+        showClearButton()
       } finally {
         btn.disabled = false
         btn.textContent = 'Analyze PR'
@@ -448,6 +441,7 @@ const renderFileSelector = (
     const apiKey = provider === 'anthropic' ? settings.anthropicKey : settings.geminiKey
 
     output.innerHTML = ''
+    hideClearButton()
     let rawMarkdown = ''
 
     try {
@@ -460,15 +454,18 @@ const renderFileSelector = (
         onChunk: (text) => {
           rawMarkdown += text
           output.innerHTML = marked.parse(rawMarkdown) as string
-          colorizeHeaders(output) 
+          colorizeHeaders(output)
         },
         selectedFiles,
         // Passa i file già parsati per evitare di ri-estrarre il diff
         initialFiles: files,
       })
+      showFooter(rawMarkdown)
+      showClearButton()
     } catch (err) {
       const message = err instanceof Error ? err.message : 'An unexpected error occurred.'
       output.innerHTML = `<p class="revieu-error">${message}</p>`
+      showClearButton()
     }
   })
 }
