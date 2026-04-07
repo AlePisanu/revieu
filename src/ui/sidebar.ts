@@ -57,12 +57,59 @@ export const createSidebar = (): HTMLElement => {
 
   const sidebar = document.createElement('div')
   sidebar.id = SIDEBAR_ID
+  // sidebar.innerHTML = `
+  //   <div class="revieu-header">
+  //     <img src="${chrome.runtime.getURL('icons/logo-text-nobg.png')}" alt="Revieu" class="revieu-logo" />
+  //     <button class="revieu-close" aria-label="Close sidebar">&times;</button>
+  //   </div>
+  //   <div class="revieu-body">
+  //     <div class="revieu-controls">
+  //       <label class="revieu-label">
+  //         Mode
+  //         <select class="revieu-select" data-setting="mode">
+  //           <option value="diff">Diff only</option>
+  //           <option value="full">Full context</option>
+  //         </select>
+  //       </label>
+  //       <label class="revieu-label">
+  //         Tone
+  //         <select class="revieu-select" data-setting="tone">
+  //           <option value="balanced">Balanced</option>
+  //           <option value="strict">Strict</option>
+  //           <option value="security">Security-focused</option>
+  //         </select>
+  //       </label>
+  //       <label class="revieu-label">
+  //         Provider
+  //         <select class="revieu-select" data-setting="provider">
+  //           <option value="anthropic">Claude</option>
+  //           <option value="gemini">Gemini</option>
+  //         </select>
+  //       </label>
+  //     </div>
+  //     <div class="revieu-output"></div>
+  //     <button class="revieu-analyze-btn" disabled>Analyze PR</button>
+  //     <div class="revieu-footer revieu-hidden-el">
+  //       <button class="revieu-copy-btn">Copy review</button>
+  //       <span class="revieu-token-hint"></span>
+  //     </div>
+  //   </div>
+  // `
+
   sidebar.innerHTML = `
-    <div class="revieu-header">
-      <img src="${chrome.runtime.getURL('icons/logo-text-nobg.png')}" alt="Revieu" class="revieu-logo" />
-      <button class="revieu-close" aria-label="Close sidebar">&times;</button>
+  <div class="revieu-header">
+    <div class="revieu-header-left">
+      <img src="${chrome.runtime.getURL('icons/logo-128.png')}" alt="Revieu" class="revieu-logo" />
+      <button class="revieu-settings-trigger" aria-label="Open settings" aria-expanded="false">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 9l6 6 6-6"/>
+        </svg>
+      </button>
     </div>
-    <div class="revieu-body">
+    <button class="revieu-close" aria-label="Close sidebar">&times;</button>
+
+    <div class="revieu-settings-popover" aria-hidden="true">
+      <div class="revieu-settings-arrow"></div>
       <div class="revieu-controls">
         <label class="revieu-label">
           Mode
@@ -87,14 +134,17 @@ export const createSidebar = (): HTMLElement => {
           </select>
         </label>
       </div>
-      <div class="revieu-output"></div>
-      <button class="revieu-analyze-btn" disabled>Analyze PR</button>
-      <div class="revieu-footer revieu-hidden-el">
-        <button class="revieu-copy-btn">Copy review</button>
-        <span class="revieu-token-hint"></span>
-      </div>
     </div>
-  `
+  </div>
+  <div class="revieu-body">
+    <div class="revieu-output"></div>
+    <button class="revieu-analyze-btn" disabled>Analyze PR</button>
+    <div class="revieu-footer revieu-hidden-el">
+      <button class="revieu-copy-btn">Copy review</button>
+      <span class="revieu-token-hint"></span>
+    </div>
+  </div>
+`
 
   // Tab laterale — sempre visibile sul bordo destro, apre la sidebar al click
   const tab = document.createElement('div')
@@ -117,6 +167,37 @@ export const createSidebar = (): HTMLElement => {
 
   const closeBtn = sidebar.querySelector('.revieu-close') as HTMLElement
   closeBtn.addEventListener('click', () => toggleSidebar(false))
+
+  const settingsTrigger = sidebar.querySelector('.revieu-settings-trigger') as HTMLElement
+const settingsPopover = sidebar.querySelector('.revieu-settings-popover') as HTMLElement
+
+const closePopover = () => {
+  settingsPopover.classList.remove('revieu-popover-open')
+  settingsTrigger.setAttribute('aria-expanded', 'false')
+  settingsTrigger.classList.remove('revieu-trigger-open')
+}
+
+settingsTrigger.addEventListener('click', (e) => {
+  e.stopPropagation()
+  const isOpen = settingsPopover.classList.contains('revieu-popover-open')
+  if (isOpen) {
+    closePopover()
+  } else {
+    settingsPopover.classList.add('revieu-popover-open')
+    settingsTrigger.setAttribute('aria-expanded', 'true')
+    settingsTrigger.classList.add('revieu-trigger-open')
+  }
+})
+
+// Chiude cliccando fuori
+document.addEventListener('click', (e) => {
+  if (!settingsPopover.contains(e.target as Node) && e.target !== settingsTrigger) {
+    closePopover()
+  }
+})
+
+// Evita che click dentro il popover lo chiudano
+settingsPopover.addEventListener('click', (e) => e.stopPropagation())
 
   // Parte chiusa di default
   sidebar.classList.add('revieu-hidden')

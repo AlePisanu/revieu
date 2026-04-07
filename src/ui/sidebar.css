@@ -40,6 +40,7 @@
   border-bottom: 1px solid #f1f5f9;
   
   background: #4036A5;
+  position: relative;
 }
 
 .revieu-title {
@@ -330,7 +331,7 @@
 }
 
 .revieu-logo {
-  width: 70px;
+  width: 30px;
   height: auto;
 }
 
@@ -396,4 +397,112 @@
   border-radius: 4px;
   padding: 1px 5px;
   color: #6366f1;
+}
+
+/* HEADER LEFT — logo + trigger */
+.revieu-header-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* SETTINGS TRIGGER — freccina */
+.revieu-settings-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 22px;
+  height: 22px;
+
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+
+  transition: all 0.15s ease;
+  padding: 0;
+}
+
+.revieu-settings-trigger:hover {
+  background: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+}
+
+.revieu-settings-trigger svg {
+  transition: transform 0.2s ease;
+}
+
+.revieu-settings-trigger.revieu-trigger-open svg {
+  transform: rotate(180deg);
+}
+
+/* POPOVER WRAPPER — posizionato rispetto all'header */
+.revieu-settings-popover {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 12px;
+
+  width: 320px;
+
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+
+  box-shadow:
+    0 8px 32px rgba(15, 23, 42, 0.12),
+    0 2px 8px rgba(15, 23, 42, 0.06);
+
+  z-index: 10001;
+  padding: 16px;
+
+  opacity: 0;
+  transform: translateY(-6px) scale(0.98);
+  pointer-events: none;
+
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
+}
+
+.revieu-settings-popover.revieu-popover-open {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: all;
+}
+
+/* FRECCIA del popover */
+.revieu-settings-arrow {
+  position: absolute;
+  top: -5px;
+  left: 20px;
+
+  width: 10px;
+  height: 10px;
+
+  background: #ffffff;
+  border-left: 1px solid #e2e8f0;
+  border-top: 1px solid #e2e8f0;
+
+  transform: rotate(45deg);
+  border-radius: 2px 0 0 0;
+}
+
+/* CONTROLS dentro il popover */
+.revieu-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.revieu-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  font-size: 12px;
+  font-weight: 500;
+  color: #475569;
 }
