@@ -35,6 +35,9 @@ const TAB_ID = 'revieu-tab'
 /** Larghezza della sidebar — usata anche per spostare il body a sinistra */
 const SIDEBAR_WIDTH = '380px'
 
+const PR_ICON = '<svg class="revieu-btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M7 8.83a3.001 3.001 0 1 0-2 0v6.34a3.001 3.001 0 1 0 2 0zM6 5a1 1 0 1 0 0 2a1 1 0 0 0 0-2m0 12a1 1 0 1 0 0 2a1 1 0 0 0 0-2m11-1.83a3.001 3.001 0 1 0 2 0V10.4A5.4 5.4 0 0 0 13.6 5h-.186l.293-.293a1 1 0 0 0-1.414-1.414l-2 2a1 1 0 0 0 0 1.414l2 2a1 1 0 1 0 1.414-1.414L13.414 7h.186a3.4 3.4 0 0 1 3.4 3.4zM17 18a1 1 0 1 1 2 0a1 1 0 0 1-2 0" clip-rule="evenodd"/></svg>';
+const TRASH_ICON = '<svg class="revieu-btn-icon" width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/><path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/></svg>';
+
 // ===========================================================================
 // CREAZIONE SIDEBAR
 // ===========================================================================
@@ -101,8 +104,8 @@ export const createSidebar = (): HTMLElement => {
   <div class="revieu-body">
     <div class="revieu-output"></div>
     <div class="revieu-btn-row">
-      <button class="revieu-analyze-btn" disabled>Analyze PR</button>
-      <button class="revieu-clear-btn" title="Clear output">✕</button>
+      <button class="revieu-analyze-btn" disabled>${PR_ICON} Analyze PR</button>
+      <button class="revieu-clear-btn" title="Clear output">${TRASH_ICON}</button>
     </div>
     <div class="revieu-footer revieu-hidden-el">
       <button class="revieu-copy-btn">Copy review</button>
@@ -118,8 +121,8 @@ export const createSidebar = (): HTMLElement => {
   const img = document.createElement('img')
   img.src = chrome.runtime.getURL('icons/logo-48.png')
   img.alt = 'Revieu'
-  img.style.width = '30px'
-  img.style.height = '30px'
+  img.style.width = '20px'
+  img.style.height = '20px'
 
   tab.appendChild(img)
   tab.setAttribute('role', 'button')
@@ -323,7 +326,7 @@ export const wireAnalyzer = (adapter: Adapter): void => {
       hideFooter()
       hideClearButton()
       btn.disabled = true
-      btn.textContent = 'Analyzing...'
+      btn.innerHTML = `${PR_ICON} Analyzing...`
 
       // Accumula il markdown grezzo — serve per il copy e la stima token
       let rawMarkdown = ''
@@ -359,7 +362,7 @@ export const wireAnalyzer = (adapter: Adapter): void => {
         showClearButton()
       } finally {
         btn.disabled = false
-        btn.textContent = 'Analyze PR'
+        btn.innerHTML = `${PR_ICON} Analyze PR`
       }
     })
   })
@@ -419,8 +422,21 @@ const renderFileSelector = (
   adapter: Adapter,
   settings: Record<string, string>
 ): void => {
+  const analyzeBtn = getAnalyzeButton()
+  console.log(Boolean(analyzeBtn))
+  if (analyzeBtn) {
+    analyzeBtn.disabled = true
+    analyzeBtn.innerHTML = `${PR_ICON} Analyze PRe`
+  }
   const list = files
-    .map((f) => `<label class="revieu-file-option"><input type="checkbox" value="${f.path}"> ${f.path} <span class="revieu-line-count">(${f.totalLines} lines)</span></label>`)
+    .map((f) => `
+      <label class="revieu-file-option">
+        <input type="checkbox" value="${f.path}">
+        <span class="revieu-file-info">
+          <span class="revieu-file-name">${f.path}</span>
+          <span class="revieu-line-count">${f.totalLines} lines</span>
+        </span>
+      </label>`)
     .join('')
 
   output.innerHTML = `
