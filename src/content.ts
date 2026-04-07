@@ -1,19 +1,20 @@
 /**
  * content.ts — Entry point del content script.
  *
- * Questo file viene iniettato da Chrome in ogni pagina che matcha
- * i pattern definiti nel manifest.json (es. "https://github.com/*").
+ * Questo file viene iniettato da Chrome in ogni pagina GitHub
+ * (match pattern: "https://github.com/*" nel manifest).
  *
  * Responsabilità:
  * 1. Verificare se la pagina corrente è una PR GitHub
  * 2. Se sì, iniettare la sidebar e collegare l'analyzer
  * 3. Gestire la navigazione SPA di GitHub (che non ricarica la pagina)
  *
- * Perché il MutationObserver sul <title>:
- * GitHub è una Single Page Application — quando navighi tra le pagine,
- * il browser NON ricarica il content script. La URL cambia ma il JS resta lo stesso.
- * Osserviamo il tag <title> perché GitHub lo aggiorna ad ogni navigazione.
- * Quando il title cambia → controlliamo se la nuova pagina è una PR → re-init.
+ * Rilevamento navigazione SPA:
+ * GitHub usa Turbo per la navigazione — non ricarica la pagina ma sostituisce
+ * il DOM. Usiamo tre strategie per intercettare la navigazione:
+ * 1. turbo:render — evento custom di Turbo, il più affidabile per GitHub
+ * 2. popstate — cattura back/forward del browser
+ * 3. Polling ogni 1s — fallback per qualsiasi edge case
  */
 
 import { GitHubAdapter } from './adapters/github'
@@ -21,6 +22,20 @@ import { createSidebar, loadSettings, wireAnalyzer } from './ui/sidebar'
 
 // Singleton dell'adapter — uno per tutta la vita del content script
 const adapter = new GitHubAdapter()
+
+/**
+ * Controlla se il contesto dell'estensione è ancora valido.
+ * Quando l'estensione viene ricaricata (es. durante sviluppo),
+ * Chrome inietta un nuovo content script ma il vecchio resta in pagina.
+ * Il vecchio script non può più usare chrome.runtime → "Extension context invalidated".
+ */
+const isContextValid = (): boolean => {
+  try {
+    return !!chrome.runtime?.id
+  } catch {
+    return false
+  }
+}
 
 /**
  * Inizializza l'estensione sulla pagina corrente.
@@ -44,18 +59,45 @@ init()
 // --- Gestione navigazione SPA ---
 // Tracciamo l'ultima URL vista. Quando cambia, re-inizializziamo.
 let lastUrl = window.location.href
+let pollTimer: ReturnType<typeof setInterval> | null = null
 
-const titleObserver = new MutationObserver(() => {
+/**
+ * Callback per rilevamento navigazione SPA.
+ * Se il contesto dell'estensione è stato invalidato (reload/update),
+ * rimuove tutti i listener e ferma il polling per evitare errori in console.
+ */
+const onUrlChange = () => {
+  if (!isContextValid()) {
+    cleanup()
+    return
+  }
+
   const currentUrl = window.location.href
-  // Se la URL non è cambiata, il title è cambiato per altro (es. notifiche)
   if (currentUrl === lastUrl) return
 
   lastUrl = currentUrl
   init()
-})
-
-// Osserva le modifiche al <title> (childList = cambio del testo interno)
-const titleEl = document.querySelector('title')
-if (titleEl) {
-  titleObserver.observe(titleEl, { childList: true })
 }
+
+/** Rimuove listener e timer quando il contesto dell'estensione non è più valido */
+const cleanup = () => {
+  if (pollTimer) {
+    clearInterval(pollTimer)
+    pollTimer = null
+  }
+  document.removeEventListener('turbo:render', onUrlChange)
+  window.removeEventListener('popstate', onUrlChange)
+}
+
+// 1. turbo:render — GitHub usa Turbo per navigazione SPA.
+//    Turbo dispatcha questo evento sul document dopo ogni navigazione.
+//    Gli eventi DOM custom sono visibili ai content script (DOM condiviso).
+document.addEventListener('turbo:render', onUrlChange)
+
+// 2. popstate — cattura navigazione back/forward del browser
+window.addEventListener('popstate', onUrlChange)
+
+// 3. Polling — fallback per edge case che gli eventi non coprono
+//    (es. navigazione via API History non intercettata).
+//    Controlla solo window.location.href vs stringa cached, costo ~0.
+pollTimer = setInterval(onUrlChange, 1000)

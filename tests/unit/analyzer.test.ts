@@ -6,6 +6,11 @@ const makeRawDiff = (path: string, additions: string[], deletions: string[] = []
   path,
   additions,
   deletions,
+  context: [],
+  rawLines: [
+    ...deletions.map((l) => `-${l}`),
+    ...additions.map((l) => `+${l}`),
+  ],
 })
 
 const makeDiffFile = (path: string, additions: string[], deletions: string[] = []): DiffFile => ({
@@ -13,6 +18,11 @@ const makeDiffFile = (path: string, additions: string[], deletions: string[] = [
   language: 'TypeScript',
   additions,
   deletions,
+  context: [],
+  rawLines: [
+    ...deletions.map((l) => `-${l}`),
+    ...additions.map((l) => `+${l}`),
+  ],
   fullContent: null,
   fullLineCount: null,
   totalLines: additions.length + deletions.length,

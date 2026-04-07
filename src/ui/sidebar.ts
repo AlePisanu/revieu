@@ -167,6 +167,18 @@ export const createSidebar = (): HTMLElement => {
   // Evita che click dentro il popover lo chiudano
   settingsPopover.addEventListener('click', (e) => e.stopPropagation())
 
+  // Salva i settings della sidebar nello storage quando l'utente li cambia.
+  // Senza questo, loadSettings() li resetta ai default ad ogni navigazione SPA
+  // (es. click su "Files changed" cambia la URL → init() → loadSettings()).
+  sidebar.querySelectorAll<HTMLSelectElement>('.revieu-select').forEach((select) => {
+    select.addEventListener('change', () => {
+      const key = select.dataset.setting
+      if (key) {
+        chrome.runtime.sendMessage({ type: 'SAVE_SETTINGS', payload: { [key]: select.value } })
+      }
+    })
+  })
+
   // Wire clear button — persistente, non serve cloneNode
   const clearBtn = getClearButton()
   clearBtn?.addEventListener('click', () => {
@@ -360,6 +372,9 @@ export const wireAnalyzer = (adapter: Adapter): void => {
         const message = err instanceof Error ? err.message : 'An unexpected error occurred.'
         output.innerHTML = `<p class="revieu-error">${message}</p>`
         showClearButton()
+      } finally {
+        btn.disabled = false
+        btn.innerHTML = `${PR_ICON} Analyze PR`
       }
     })
   })
