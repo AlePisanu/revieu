@@ -59,7 +59,7 @@ export const createSidebar = (): HTMLElement => {
   sidebar.id = SIDEBAR_ID
   sidebar.innerHTML = `
     <div class="revieu-header">
-      <img src="${chrome.runtime.getURL('icons/logo-text.png')}" alt="Revieu" class="revieu-logo" />
+      <img src="${chrome.runtime.getURL('icons/logo-text-nobg.png')}" alt="Revieu" class="revieu-logo" />
       <button class="revieu-close" aria-label="Close sidebar">&times;</button>
     </div>
     <div class="revieu-body">

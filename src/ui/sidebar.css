@@ -6,7 +6,6 @@
   height: 100vh;
 
   background: #ffffff;
-  border-left: 1px solid #e2e8f0;
   box-shadow: -4px 0 24px rgba(15, 23, 42, 0.08);
 
   z-index: 9999;
@@ -18,10 +17,16 @@
   color: #0f172a;
 
   transition: transform 0.25s ease;
+
+  right: 10px;
+  height: calc(100vh - 20px);
+  top: 10px;
+  border-radius: 10px;
+  overflow: hidden;
 }
 
 #revieu-sidebar.revieu-hidden {
-  transform: translateX(100%);
+  transform: translateX(110%);
 }
 
 /* HEADER */
@@ -33,7 +38,8 @@
   padding: 14px 16px;
 
   border-bottom: 1px solid #f1f5f9;
-  background: #ffffff;
+  
+  background: #4036A5;
 }
 
 .revieu-title {
@@ -49,10 +55,12 @@
   cursor: pointer;
   color: #94a3b8;
 
-  border-radius: 6px;
+  border-radius: 100%;
   padding: 4px;
 
   transition: all 0.15s ease;
+  width: 35px;
+  height: 35px;
 }
 
 .revieu-close:hover {
