@@ -5,119 +5,132 @@
 #revieu-sidebar {
   /* surfaces */
   --revieu-bg: #ffffff;
-  --revieu-bg-subtle: #f8fafc;
-  --revieu-bg-muted: #f1f5f9;
+  --revieu-bg-subtle: #fafafa;
+  --revieu-bg-muted: #f4f4f5;
 
   /* borders */
-  --revieu-border: #e2e8f0;
-  --revieu-border-light: #f1f5f9;
+  --revieu-border: #e4e4e7;
+  --revieu-border-light: #f4f4f5;
 
   /* text */
-  --revieu-text: #0f172a;
-  --revieu-text-secondary: #475569;
-  --revieu-text-muted: #94a3b8;
-  --revieu-text-accent: #6366f1;
+  --revieu-text: #111111;
+  --revieu-text-secondary: #52525b;
+  --revieu-text-muted: #71717a;
+  --revieu-text-accent: #3b82f6;        /* blu standard moderno */
 
   /* header */
   --revieu-header-bg: #ffffff;
-  --revieu-header-border: #f1f5f9;
-  --revieu-header-text: #0f172a;
+  --revieu-header-border: #f4f4f5;
+  --revieu-header-text: #111111;
 
-  /* interactive */
-  --revieu-btn-bg: #0f172a;
+  /* buttons */
+  --revieu-btn-bg: #111111;
   --revieu-btn-text: #ffffff;
-  --revieu-btn-hover: #1e293b;
+  --revieu-btn-hover: #27272a;
 
-  /* accents */
-  --revieu-focus-ring: rgba(99, 102, 241, 0.12);
-  --revieu-focus-border: #6366f1;
+  /* accents & focus */
+  --revieu-focus-ring: rgba(59, 130, 246, 0.15);
+  --revieu-focus-border: #3b82f6;
 
   /* shadows */
-  --revieu-shadow: rgba(15, 23, 42, 0.08);
-  --revieu-shadow-popover: rgba(15, 23, 42, 0.12);
-  --revieu-shadow-popover-sm: rgba(15, 23, 42, 0.06);
+  --revieu-shadow: rgba(0, 0, 0, 0.06);
+  --revieu-shadow-popover: rgba(0, 0, 0, 0.1);
+  --revieu-shadow-popover-sm: rgba(0, 0, 0, 0.05);
 
   /* status */
   --revieu-error-bg: #fef2f2;
   --revieu-error-border: #fee2e2;
-  --revieu-error-text: #b91c1c;
-  --revieu-warning-bg: #fffbeb;
-  --revieu-warning-border: #fef3c7;
-  --revieu-warning-text: #92400e;
+  --revieu-error-text: #ef4444;
 
-  /* output */
-  --revieu-output-text: #1e293b;
-  --revieu-code-bg: #f1f5f9;
-  --revieu-code-border: #e2e8f0;
-  --revieu-code-text: #6366f1;
-  --revieu-critical-color: #e5534b;
-  --revieu-improvements-color: #d4a72c;
-  --revieu-minor-color: #57ab5a;
+  --revieu-warning-bg: #fef9c3;
+  --revieu-warning-text: #ca8a04;
+
+  /* output / code */
+  --revieu-output-text: #27272a;
+  --revieu-code-bg: #f4f4f5;
+  --revieu-code-border: #e4e4e7;
+  --revieu-code-text: #3b82f6;
+
+  --revieu-critical-color: #ef4444;
+  --revieu-improvements-color: #eab308;
+  --revieu-minor-color: #22c55e;
 
   /* settings trigger */
-  --revieu-trigger-bg: rgba(0, 0, 0, 0.06);
-  --revieu-trigger-border: rgba(0, 0, 0, 0.08);
-  --revieu-trigger-text: #475569;
-  --revieu-trigger-hover-bg: rgba(0, 0, 0, 0.1);
-  --revieu-trigger-hover-text: #0f172a;
+  --revieu-trigger-bg: rgba(0, 0, 0, 0.04);
+  --revieu-trigger-border: rgba(0, 0, 0, 0.06);
+  --revieu-trigger-text: #52525b;
+  --revieu-trigger-hover-bg: rgba(0, 0, 0, 0.08);
+  --revieu-trigger-hover-text: #111111;
 
   /* tab */
-  --revieu-tab-shadow: rgba(79, 70, 229, 0.28);
-  --revieu-tab-shadow-hover: rgba(79, 70, 229, 0.4);
+  --revieu-tab-shadow: rgba(59, 130, 246, 0.25);
+  --revieu-tab-shadow-hover: rgba(59, 130, 246, 0.35);
 }
 
 @media (prefers-color-scheme: dark) {
   #revieu-sidebar {
-    --revieu-bg: #0f172a;
-    --revieu-bg-subtle: #1e293b;
-    --revieu-bg-muted: #334155;
+    /* surfaces */
+    --revieu-bg: #111113;
+    --revieu-bg-subtle: #18181b;
+    --revieu-bg-muted: #27272a;
 
-    --revieu-border: #334155;
-    --revieu-border-light: #1e293b;
+    /* borders */
+    --revieu-border: #3f3f46;
+    --revieu-border-light: #27272a;
 
-    --revieu-text: #e2e8f0;
-    --revieu-text-secondary: #94a3b8;
-    --revieu-text-muted: #64748b;
-    --revieu-text-accent: #818cf8;
+    /* text */
+    --revieu-text: #f4f4f5;
+    --revieu-text-secondary: #a1a1aa;
+    --revieu-text-muted: #71717a;
+    --revieu-text-accent: #60a5fa;
 
-    --revieu-header-bg: #1e293b;
-    --revieu-header-border: #334155;
-    --revieu-header-text: #e2e8f0;
+    /* header */
+    --revieu-header-bg: #1e1e22;
+    --revieu-header-border: #27272a;
+    --revieu-header-text: #f4f4f5;
 
-    --revieu-btn-bg: #e2e8f0;
-    --revieu-btn-text: #0f172a;
-    --revieu-btn-hover: #cbd5e1;
+    /* buttons */
+    --revieu-btn-bg: #f4f4f5;
+    --revieu-btn-text: #09090b;
+    --revieu-btn-hover: #e4e4e7;
 
-    --revieu-focus-ring: rgba(129, 140, 248, 0.2);
-    --revieu-focus-border: #818cf8;
+    /* accents & focus */
+    --revieu-focus-ring: rgba(96, 165, 250, 0.25);
+    --revieu-focus-border: #60a5fa;
 
-    --revieu-shadow: rgba(0, 0, 0, 0.3);
-    --revieu-shadow-popover: rgba(0, 0, 0, 0.4);
-    --revieu-shadow-popover-sm: rgba(0, 0, 0, 0.2);
+    /* shadows */
+    --revieu-shadow: rgba(0, 0, 0, 0.4);
+    --revieu-shadow-popover: rgba(0, 0, 0, 0.5);
+    --revieu-shadow-popover-sm: rgba(0, 0, 0, 0.3);
 
-    --revieu-error-bg: rgba(185, 28, 28, 0.12);
-    --revieu-error-border: rgba(185, 28, 28, 0.25);
-    --revieu-error-text: #fca5a5;
-    --revieu-warning-bg: #fffbeb;
-    --revieu-warning-border: #fef3c7;
-    --revieu-warning-text: #92400e;
+    /* status */
+    --revieu-error-bg: rgba(185, 28, 28, 0.2);
+    --revieu-error-border: rgba(185, 28, 28, 0.35);
+    --revieu-error-text: #f87171;
 
-    --revieu-output-text: #cbd5e1;
-    --revieu-code-bg: #1e293b;
-    --revieu-code-border: #334155;
-    --revieu-code-text: #818cf8;
+    --revieu-warning-bg:  rgba(234, 179, 8, 0.35);
+    --revieu-warning-text: #facc15;
+
+    /* output / code */
+    --revieu-output-text: #d4d4d8;
+    --revieu-code-bg: #18181b;
+    --revieu-code-border: #3f3f46;
+    --revieu-code-text: #60a5fa;
+
     --revieu-critical-color: #f87171;
-    --revieu-improvements-color: #fbbf24;
+    --revieu-improvements-color: #facc15;
     --revieu-minor-color: #4ade80;
 
-    --revieu-trigger-bg: rgba(255, 255, 255, 0.1);
-    --revieu-trigger-border: rgba(255, 255, 255, 0.15);
-    --revieu-trigger-text: rgba(255, 255, 255, 0.7);
-    --revieu-trigger-hover-bg: rgba(255, 255, 255, 0.18);
-    --revieu-trigger-hover-text: #ffffff;
+    /* settings trigger */
+    --revieu-trigger-bg: rgba(255, 255, 255, 0.08);
+    --revieu-trigger-border: rgba(255, 255, 255, 0.12);
+    --revieu-trigger-text: #a1a1aa;
+    --revieu-trigger-hover-bg: rgba(255, 255, 255, 0.15);
+    --revieu-trigger-hover-text: #f4f4f5;
 
-    --revieu-tab-shadow: rgba(99, 102, 241, 0.35);
-    --revieu-tab-shadow-hover: rgba(99, 102, 241, 0.5);
+    /* tab */
+    --revieu-tab-shadow: rgba(96, 165, 250, 0.3);
+    --revieu-tab-shadow-hover: rgba(96, 165, 250, 0.45);
   }
 }
 
@@ -145,7 +158,7 @@
   right: 10px;
   height: calc(100vh - 20px);
   top: 10px;
-  border-radius: 10px;
+  border-radius: 8px;
   overflow: hidden;
 }
 
@@ -167,7 +180,7 @@
 
   border: 0;
   margin: 10px;
-  border-radius: 10px;
+  border-radius: 8px;
 
 }
 
@@ -185,7 +198,7 @@
   cursor: pointer;
   color: var(--revieu-text-muted);
 
-  border-radius: 10px;
+  border-radius: 8px;
 
   transition: all 0.15s ease;
   width: 30px;
@@ -233,7 +246,7 @@
   padding: 8px 10px;
 
   border: 1px solid var(--revieu-border);
-  border-radius: 8px;
+  border-radius: 5px;
 
   background: var(--revieu-bg);
 
@@ -385,7 +398,6 @@
   padding: 10px 12px;
 
   background: var(--revieu-warning-bg);
-  border: 1px solid var(--revieu-warning-border);
   border-radius: 8px;
 }
 
@@ -398,7 +410,7 @@
 
 .revieu-file-option {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 8px;
 
   padding: 10px 12px;
@@ -571,9 +583,48 @@
   color: var(--revieu-output-text);
 }
 
-.revieu-critical + ul li { border-left-color: var(--revieu-critical-color); }
-.revieu-improvements + ul li { border-left-color: var(--revieu-improvements-color); }
-.revieu-minor + ul li { border-left-color: var(--revieu-minor-color); }
+.revieu-critical + ul li,
+.revieu-improvements + ul li,
+.revieu-minor + ul li {
+  position: relative;
+  padding-left: 1.5rem;           /* spazio per l'accento */
+  list-style: none;               /* rimuove i pallini default */
+  margin-bottom: 0.75rem;
+}
+
+/* Barra verticale colorata più spessa e morbida */
+.revieu-critical + ul li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.2rem;
+  bottom: 0.2rem;
+  width: 5px;
+  background: var(--revieu-critical-color);
+  border-radius: 9999px;          /* bordi arrotondati */
+}
+
+.revieu-improvements + ul li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.2rem;
+  bottom: 0.2rem;
+  width: 5px;
+  background: var(--revieu-improvements-color);
+  border-radius: 9999px;
+}
+
+.revieu-minor + ul li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.2rem;
+  bottom: 0.2rem;
+  width: 5px;
+  background: var(--revieu-minor-color);
+  border-radius: 9999px;
+}
 
 .revieu-output code {
   font-family: 'JetBrains Mono', 'Fira Code', monospace;
@@ -642,7 +693,7 @@
 
   background: var(--revieu-bg);
   border: 1px solid var(--revieu-border);
-  border-radius: 12px;
+  border-radius: 8px;
 
   box-shadow:
     0 8px 32px var(--revieu-shadow-popover),
@@ -680,4 +731,81 @@
 
   transform: rotate(45deg);
   border-radius: 2px 0 0 0;
+}
+
+.revieu-toggle-all-btn {
+  align-self: flex-start;
+  padding: 5px 10px;
+
+  background: var(--revieu-bg-subtle);
+  color: var(--revieu-text-secondary);
+
+  border: 1px solid var(--revieu-border);
+  border-radius: 8px;
+
+  font-size: 12px;
+  font-weight: 500;
+
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.revieu-toggle-all-btn:hover {
+  background: var(--revieu-bg-muted);
+  color: var(--revieu-text);
+}
+
+.revieu-dots::after {
+  content: '';
+  animation: revieu-dots 2s steps(4, end) infinite;
+}
+
+@keyframes revieu-dots {
+  0%   { content: '';   }
+  25%  { content: '.';  }
+  50%  { content: '..'; }
+  75%  { content: '...'; }
+}
+
+.revieu-empty-state {
+  text-align: center;
+  padding: 2.5rem 1.5rem 3.5rem;
+  color: var(--color-fg-muted);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 420px;
+  gap: 1.25rem;
+}
+
+.revieu-empty-title {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--color-fg-default);
+  margin: 0 0 0.8rem 0;
+}
+
+.revieu-empty-description {
+  font-size: 0.96rem;
+  line-height: 1.55;
+  max-width: 290px;
+  margin: 0 auto;
+}
+
+.revieu-empty-tips {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  width: 100%;
+  max-width: 260px;
+}
+
+.revieu-tip {
+  background: var(--color-canvas-subtle);
+  padding: 0.55rem 1rem;
+  font-size: 0.9rem;
+  text-align: left;
+  border-left: 4px solid var(--revieu-improvements-color);
 }

@@ -102,7 +102,21 @@ export const createSidebar = (): HTMLElement => {
     </div>
   </div>
   <div class="revieu-body">
-    <div class="revieu-output"></div>
+    <div class="revieu-output">
+    <div class="revieu-empty-state">
+
+  <h3 class="revieu-empty-title">Ready for a Code Review?</h3>
+  <p class="revieu-empty-description">
+    Click <strong>Analyze PR</strong> above to start.<br>
+    Get instant feedback on quality, security, and improvements.
+  </p>
+
+  <div class="revieu-empty-tips">
+    <div class="revieu-tip"> <strong>Strict</strong> tone = more critical feedback</div>
+    <div class="revieu-tip"> <strong>Security-focused</strong> for important PRs</div>
+  </div>
+</div>
+    </div>
     <div class="revieu-btn-row">
       <button class="revieu-analyze-btn" disabled>${PR_ICON} Analyze PR</button>
       <button class="revieu-clear-btn" title="Clear output">${TRASH_ICON}</button>
@@ -338,7 +352,7 @@ export const wireAnalyzer = (adapter: Adapter): void => {
       hideFooter()
       hideClearButton()
       btn.disabled = true
-      btn.innerHTML = `${PR_ICON} Analyzing...`
+      btn.innerHTML = `${PR_ICON} Analyzing<span class="revieu-dots"></span>`
 
       // Accumula il markdown grezzo — serve per il copy e la stima token
       let rawMarkdown = ''
@@ -434,7 +448,7 @@ const renderFileSelector = (
   const analyzeBtn = getAnalyzeButton()
   if (analyzeBtn) {
     analyzeBtn.disabled = true
-    analyzeBtn.innerHTML = `${PR_ICON} Analyzing...`
+    analyzeBtn.innerHTML = `${PR_ICON} Analyzing<span class="revieu-dots"></span>`
   }
   const list = files
     .map((f) => `
@@ -449,12 +463,34 @@ const renderFileSelector = (
 
   output.innerHTML = `
     <p class="revieu-warning">Diff too large (${files.reduce((s, f) => s + f.totalLines, 0)} lines). Select files to analyze:</p>
+    <button class="revieu-toggle-all-btn">Select all</button>
     <div class="revieu-file-list">${list}</div>
     <div class="revieu-btn-row">
       <button class="revieu-analyze-selected-btn">Analyze selected</button>
       <button class="revieu-clear-btn" title="Clear output">${TRASH_ICON}</button>
     </div>
   `
+
+  const clearBtn = getClearButton()
+  clearBtn?.addEventListener('click', () => {
+    const output = getOutputElement()
+    if (output) output.innerHTML = ''
+    hideFooter()
+    hideClearButton()
+    if (analyzeBtn) {
+      analyzeBtn.disabled = false
+      analyzeBtn.innerHTML = `${PR_ICON} Analyze PR`
+    }
+  })
+
+  const toggleAllBtn = output.querySelector('.revieu-toggle-all-btn') as HTMLButtonElement
+  toggleAllBtn.addEventListener('click', () => {
+    const checkboxes = output.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')
+    const allChecked = Array.from(checkboxes).every((cb) => cb.checked)
+    checkboxes.forEach((cb) => { cb.checked = !allChecked })
+    toggleAllBtn.textContent = allChecked ? 'Select all' : 'Deselect all'
+  })
+
 
   const selectedBtn = output.querySelector('.revieu-analyze-selected-btn') as HTMLButtonElement
 
