@@ -1,28 +1,28 @@
 /**
- * sidebar.ts — UI della sidebar iniettata nella pagina GitHub.
+ * sidebar.ts — Sidebar UI injected into GitHub pages.
  *
- * Responsabilità:
- * 1. Creare e iniettare il pannello sidebar nel DOM di GitHub
- * 2. Gestire apertura/chiusura della sidebar
- * 3. Collegare i controlli (mode, tone, provider) all'analyzer
- * 4. Renderizzare la review AI come HTML (markdown → HTML via `marked`)
- * 5. Gestire il caso "diff troppo grande" mostrando un selettore file
+ * Responsibilities:
+ * 1. Create and inject the sidebar panel into GitHub's DOM
+ * 2. Handle sidebar open/close
+ * 3. Connect controls (mode, tone, provider) to the analyzer
+ * 4. Render the AI review as HTML (markdown → HTML via `marked`)
+ * 5. Handle the "diff too large" case by showing a file selector
  *
  * Pattern: CONTROLLER
- * Questo file è il collante tra la UI (DOM) e la logica (analyzer).
- * Non contiene logica di business — legge input dalla UI, chiama l'analyzer,
- * e mostra il risultato. Tutto il lavoro pesante è delegato.
+ * This file is the glue between the UI (DOM) and the logic (analyzer).
+ * It contains no business logic — it reads input from the UI, calls the
+ * analyzer, and displays the result. All heavy lifting is delegated.
  *
- * Come funziona l'iniezione:
- * Il content script (content.ts) chiama createSidebar() che:
- * - Crea un div con id "revieu-sidebar" e lo appende al body
- * - Crea un tab laterale per aprire/chiudere la sidebar
- * - Gli stili CSS vengono dal file sidebar.css iniettato dal manifest
+ * How injection works:
+ * The content script (content.ts) calls createSidebar() which:
+ * - Creates a div with id "revieu-sidebar" and appends it to the body
+ * - Creates a side tab to open/close the sidebar
+ * - CSS styles come from sidebar.css injected by the manifest
  *
- * Nota sul cloneNode in wireAnalyzer:
- * Quando l'estensione viene ricaricata durante lo sviluppo, Chrome inietta
- * un nuovo content script SENZA rimuovere il vecchio. Ogni script aggiunge
- * un listener al bottone → click multipli. Il clone rimuove tutti i listener.
+ * Note on cloneNode in wireAnalyzer:
+ * When the extension is reloaded during development, Chrome injects
+ * a new content script WITHOUT removing the old one. Each script adds
+ * a listener to the button → multiple clicks. The clone removes all listeners.
  */
 
 import type { Adapter } from '../types'
@@ -30,32 +30,32 @@ import { analyze, TooLargeError } from '../core/analyzer'
 import { marked } from 'marked'
 import lottie from 'lottie-web'
 
-// ID degli elementi DOM della sidebar — usati per i querySelector
+// DOM element IDs for the sidebar — used by querySelector
 const SIDEBAR_ID = 'revieu-sidebar'
 const TAB_ID = 'revieu-tab'
-/** Larghezza della sidebar — usata anche per spostare il body a sinistra */
+/** Sidebar width — also used to shift the body left */
 const SIDEBAR_WIDTH = '380px'
 
 const PR_ICON = '<svg class="revieu-btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M7 8.83a3.001 3.001 0 1 0-2 0v6.34a3.001 3.001 0 1 0 2 0zM6 5a1 1 0 1 0 0 2a1 1 0 0 0 0-2m0 12a1 1 0 1 0 0 2a1 1 0 0 0 0-2m11-1.83a3.001 3.001 0 1 0 2 0V10.4A5.4 5.4 0 0 0 13.6 5h-.186l.293-.293a1 1 0 0 0-1.414-1.414l-2 2a1 1 0 0 0 0 1.414l2 2a1 1 0 1 0 1.414-1.414L13.414 7h.186a3.4 3.4 0 0 1 3.4 3.4zM17 18a1 1 0 1 1 2 0a1 1 0 0 1-2 0" clip-rule="evenodd"/></svg>';
 const TRASH_ICON = '<svg class="revieu-btn-icon" width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/><path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/></svg>';
 
 // ===========================================================================
-// CREAZIONE SIDEBAR
+// SIDEBAR CREATION
 // ===========================================================================
 
 /**
- * Crea e inietta la sidebar nel DOM della pagina.
- * Se già presente (navigazione SPA), ritorna quella esistente.
+ * Creates and injects the sidebar into the page DOM.
+ * If already present (SPA navigation), returns the existing one.
  *
- * La sidebar contiene:
- * - Header con titolo e bottone chiudi
- * - Controlli: mode (diff/full), tone, provider
- * - Bottone "Analyze PR" (disabilitato finché non c'è una API key)
- * - Area output dove viene renderizzata la review
- * - Footer con bottone "Copy" e stima token (nascosto fino a review completata)
+ * The sidebar contains:
+ * - Header with title and close button
+ * - Controls: mode (diff/full), tone, provider
+ * - "Analyze PR" button (disabled until an API key is configured)
+ * - Output area where the review is rendered
+ * - Footer with "Copy" button and token estimate (hidden until review completes)
  */
 export const createSidebar = (): HTMLElement => {
-  // Evita doppia iniezione (GitHub è una SPA, il content script può rieseguire)
+  // Prevent double injection (GitHub is a SPA, content script may re-run)
   const existing = document.getElementById(SIDEBAR_ID)
   if (existing) return existing
 
@@ -122,7 +122,7 @@ export const createSidebar = (): HTMLElement => {
   </div>
 `
 
-  // Tab laterale — sempre visibile sul bordo destro, apre la sidebar al click
+  // Side tab — always visible on the right edge, opens sidebar on click
   const tab = document.createElement('div')
   tab.id = TAB_ID
 
@@ -165,19 +165,19 @@ export const createSidebar = (): HTMLElement => {
     }
   })
 
-  // Chiude cliccando fuori
+  // Close when clicking outside
   document.addEventListener('click', (e) => {
     if (!settingsPopover.contains(e.target as Node) && e.target !== settingsTrigger) {
       closePopover()
     }
   })
 
-  // Evita che click dentro il popover lo chiudano
+  // Prevent clicks inside the popover from closing it
   settingsPopover.addEventListener('click', (e) => e.stopPropagation())
 
-  // Salva i settings della sidebar nello storage quando l'utente li cambia.
-  // Senza questo, loadSettings() li resetta ai default ad ogni navigazione SPA
-  // (es. click su "Files changed" cambia la URL → init() → loadSettings()).
+  // Save sidebar settings to storage when the user changes them.
+  // Without this, loadSettings() resets them to defaults on every SPA navigation
+  // (e.g. clicking "Files changed" changes the URL → init() → loadSettings()).
   sidebar.querySelectorAll<HTMLSelectElement>('.revieu-select').forEach((select) => {
     select.addEventListener('change', () => {
       const key = select.dataset.setting
@@ -187,7 +187,7 @@ export const createSidebar = (): HTMLElement => {
     })
   })
 
-  // Wire clear button — persistente, non serve cloneNode
+  // Wire clear button — persistent, no need for cloneNode
   const clearBtn = getClearButton()
   clearBtn?.addEventListener('click', () => {
     const output = getOutputElement()
@@ -196,7 +196,7 @@ export const createSidebar = (): HTMLElement => {
     hideClearButton()
   })
 
-  // Inizializza animazione Lottie nell'empty state
+  // Initialize Lottie animation in the empty state
   const lottieContainer = sidebar.querySelector('.revieu-lottie-container') as HTMLElement
   if (lottieContainer) {
     lottie.loadAnimation({
@@ -208,20 +208,20 @@ export const createSidebar = (): HTMLElement => {
     })
   }
 
-  // Parte chiusa di default
+  // Starts closed by default
   sidebar.classList.add('revieu-hidden')
 
   return sidebar
 }
 
 // ===========================================================================
-// APERTURA / CHIUSURA
+// OPEN / CLOSE
 // ===========================================================================
 
 /**
- * Apre o chiude la sidebar.
- * Quando aperta, sposta il body a sinistra (marginRight) per fare spazio.
- * @param open - true per aprire, false per chiudere, undefined per toggle
+ * Opens or closes the sidebar.
+ * When open, shifts the body left (marginRight) to make room.
+ * @param open - true to open, false to close, undefined to toggle
  */
 export const toggleSidebar = (open?: boolean): void => {
   const sidebar = document.getElementById(SIDEBAR_ID)
@@ -233,7 +233,7 @@ export const toggleSidebar = (open?: boolean): void => {
   if (shouldOpen) {
     sidebar.classList.remove('revieu-hidden')
     tab.classList.add('revieu-tab-hidden')
-    // Sposta il body per evitare che la sidebar copra il contenuto
+    // Shift the body so the sidebar doesn't cover the content
     document.body.style.marginRight = SIDEBAR_WIDTH
   } else {
     sidebar.classList.add('revieu-hidden')
@@ -247,15 +247,15 @@ export const toggleSidebar = (open?: boolean): void => {
 // ===========================================================================
 
 /**
- * Carica i settings salvati dal background e li applica ai selettori della sidebar.
- * Abilita il bottone "Analyze PR" solo se almeno una API key è configurata.
+ * Loads saved settings from the background and applies them to the sidebar selectors.
+ * Enables the "Analyze PR" button only if at least one API key is configured.
  */
 export const loadSettings = (): void => {
   chrome.runtime.sendMessage({ type: 'GET_SETTINGS' }, (settings) => {
     if (!settings) return
 
-    // Applica i valori salvati a ogni select (mode, tone, provider)
-    // Il data-setting sull'HTML matcha la chiave nello storage
+    // Apply saved values to each select (mode, tone, provider)
+    // The data-setting attribute on the HTML matches the key in storage
     const selects = document.querySelectorAll<HTMLSelectElement>(`#${SIDEBAR_ID} .revieu-select`)
     for (const select of selects) {
       const key = select.dataset.setting as string
@@ -264,7 +264,7 @@ export const loadSettings = (): void => {
       }
     }
 
-    // Il bottone è disabilitato finché non c'è almeno una API key
+    // Button is disabled until at least one API key exists
     const btn = getAnalyzeButton()
     if (btn) {
       const hasKey = settings.anthropicKey || settings.geminiKey
@@ -273,7 +273,7 @@ export const loadSettings = (): void => {
   })
 }
 
-/** Legge i valori correnti dai selettori della sidebar */
+/** Reads the current values from the sidebar selectors */
 export const getSelectedSettings = (): { mode: string; tone: string; provider: string } => {
   const get = (name: string) => {
     const el = document.querySelector<HTMLSelectElement>(`#${SIDEBAR_ID} [data-setting="${name}"]`)
@@ -284,57 +284,57 @@ export const getSelectedSettings = (): { mode: string; tone: string; provider: s
 }
 
 // ===========================================================================
-// HELPER DOM
+// DOM HELPERS
 // ===========================================================================
 
-/** Ritorna il contenitore dove viene renderizzata la review */
+/** Returns the container where the review is rendered */
 export const getOutputElement = (): HTMLElement | null => {
   return document.querySelector(`#${SIDEBAR_ID} .revieu-output`)
 }
 
-/** Ritorna il bottone "Analyze PR" */
+/** Returns the "Analyze PR" button */
 export const getAnalyzeButton = (): HTMLButtonElement | null => {
   return document.querySelector(`#${SIDEBAR_ID} .revieu-analyze-btn`)
 }
 
-/** Ritorna il bottone "Clear" */
+/** Returns the "Clear" button */
 const getClearButton = (): HTMLButtonElement | null => {
   return document.querySelector(`#${SIDEBAR_ID} .revieu-clear-btn`)
 }
 
-/** Mostra il bottone clear con animazione */
+/** Shows the clear button with animation */
 const showClearButton = (): void => {
   getClearButton()?.classList.add('revieu-clear-visible')
 }
 
-/** Nasconde il bottone clear con animazione */
+/** Hides the clear button with animation */
 const hideClearButton = (): void => {
   getClearButton()?.classList.remove('revieu-clear-visible')
 }
 
 // ===========================================================================
-// COLLEGAMENTO ANALYZE BUTTON → ANALYZER
+// ANALYZE BUTTON → ANALYZER WIRING
 // ===========================================================================
 
 /**
- * Collega il click del bottone "Analyze PR" all'intero flusso di review.
+ * Connects the "Analyze PR" button click to the entire review flow.
  *
- * Flusso al click:
- * 1. Legge i settings dal background (API key, mode, tone, provider)
- * 2. Resetta l'output e mostra "Analyzing..."
- * 3. Chiama analyze() passando un callback onChunk che:
- *    - Accumula il markdown grezzo ricevuto in streaming
- *    - Lo converte in HTML con `marked` e lo inietta nell'output
- * 4. Se il diff è troppo grande → mostra il selettore file
- * 5. Se c'è un errore → mostra il messaggio di errore
- * 6. A fine review → mostra footer con "Copy review" e stima token
+ * Flow on click:
+ * 1. Reads settings from the background (API key, mode, tone, provider)
+ * 2. Resets the output and shows "Analyzing..."
+ * 3. Calls analyze() with an onChunk callback that:
+ *    - Accumulates the raw markdown received via streaming
+ *    - Converts it to HTML with `marked` and injects it into the output
+ * 4. If the diff is too large → shows the file selector
+ * 5. If there's an error → shows the error message
+ * 6. When the review finishes → shows the footer with "Copy review" and token estimate
  */
 export const wireAnalyzer = (adapter: Adapter): void => {
   const oldBtn = getAnalyzeButton()
   if (!oldBtn) return
 
-  // Clona il bottone per rimuovere eventuali listener duplicati
-  // (vedi nota nel commento del file sopra)
+  // Clone the button to remove any duplicate listeners
+  // (see note in the file comment above)
   const btn = oldBtn.cloneNode(true) as HTMLButtonElement
   oldBtn.replaceWith(btn)
 
@@ -346,7 +346,7 @@ export const wireAnalyzer = (adapter: Adapter): void => {
       if (!settings) return
 
       const { mode, tone, provider } = getSelectedSettings()
-      // Prende la API key giusta in base al provider selezionato
+      // Pick the right API key based on the selected provider
       const apiKey = provider === 'anthropic' ? settings.anthropicKey : settings.geminiKey
 
       if (!apiKey) {
@@ -360,8 +360,9 @@ export const wireAnalyzer = (adapter: Adapter): void => {
       btn.disabled = true
       btn.innerHTML = `${PR_ICON} Analyzing<span class="revieu-dots"></span>`
 
-      // Accumula il markdown grezzo — serve per il copy e la stima token
+      // Accumulates raw markdown — needed for copy and token estimate
       let rawMarkdown = ''
+      let showingFileSelector = false
 
       try {
         await analyze({
@@ -372,9 +373,9 @@ export const wireAnalyzer = (adapter: Adapter): void => {
           apiKey,
           onChunk: (text) => {
             rawMarkdown += text
-            // Ri-renderizza tutto il markdown ad ogni chunk.
-            // Non è il più efficiente, ma `marked` è veloce e garantisce
-            // che il rendering sia sempre coerente (no artefatti parziali).
+            // Re-renders all markdown on every chunk.
+            // Not the most efficient, but `marked` is fast and ensures
+            // the rendering is always consistent (no partial artifacts).
             output.innerHTML = marked.parse(rawMarkdown) as string
             colorizeHeaders(output)
           },
@@ -382,8 +383,9 @@ export const wireAnalyzer = (adapter: Adapter): void => {
         showFooter(rawMarkdown)
         showClearButton()
       } catch (err) {
-        // TooLargeError: il diff supera il limite → mostra selettore file
+        // TooLargeError: diff exceeds the limit → show file selector
         if (err instanceof TooLargeError) {
+          showingFileSelector = true
           renderFileSelector(output, err.files, adapter, settings)
           showClearButton()
           return
@@ -393,25 +395,27 @@ export const wireAnalyzer = (adapter: Adapter): void => {
         output.innerHTML = `<p class="revieu-error">${message}</p>`
         showClearButton()
       } finally {
-        btn.disabled = false
-        btn.innerHTML = `${PR_ICON} Analyze PR`
+        if (!showingFileSelector) {
+          btn.disabled = false
+          btn.innerHTML = `${PR_ICON} Analyze PR`
+        }
       }
     })
   })
 }
 
 // ===========================================================================
-// FOOTER (copy + stima token)
+// FOOTER (copy + token estimate)
 // ===========================================================================
 
 /**
- * Stima approssimativa dei token — ~4 caratteri per token.
- * Non è precisa (ogni modello tokenizza diversamente),
- * ma dà un'idea del costo della review.
+ * Rough token estimate — ~4 characters per token.
+ * Not precise (each model tokenizes differently),
+ * but gives an idea of the review cost.
  */
 const estimateTokens = (text: string): number => Math.ceil(text.length / 4)
 
-/** Mostra il footer con il bottone copy e la stima token */
+/** Shows the footer with the copy button and token estimate */
 const showFooter = (reviewText: string): void => {
   const footer = document.querySelector(`#${SIDEBAR_ID} .revieu-footer`)
   const hint = document.querySelector(`#${SIDEBAR_ID} .revieu-token-hint`)
@@ -420,7 +424,7 @@ const showFooter = (reviewText: string): void => {
   hint.textContent = `~${estimateTokens(reviewText)} tokens`
   footer.classList.remove('revieu-hidden-el')
 
-  // Collega il bottone copy — usa la Clipboard API del browser
+  // Wire the copy button — uses the browser's Clipboard API
   const copyBtn = footer.querySelector('.revieu-copy-btn') as HTMLButtonElement
   copyBtn.onclick = async () => {
     await navigator.clipboard.writeText(reviewText)
@@ -429,24 +433,24 @@ const showFooter = (reviewText: string): void => {
   }
 }
 
-/** Nasconde il footer (prima di una nuova analisi) */
+/** Hides the footer (before a new analysis) */
 const hideFooter = (): void => {
   const footer = document.querySelector(`#${SIDEBAR_ID} .revieu-footer`)
   if (footer) footer.classList.add('revieu-hidden-el')
 }
 
 // ===========================================================================
-// SELETTORE FILE (quando il diff è troppo grande)
+// FILE SELECTOR (when the diff is too large)
 // ===========================================================================
 
 /**
- * Mostra un elenco di checkbox con i file della PR.
- * L'utente sceglie quali file analizzare.
+ * Shows a list of checkboxes with the PR files.
+ * The user picks which files to analyze.
  *
- * Quando clicca "Analyze selected":
- * - Prende i file selezionati
- * - Ri-chiama analyze() con selectedFiles e initialFiles
- *   (initialFiles evita di ri-estrarre il diff da zero)
+ * When they click "Analyze selected":
+ * - Takes the selected files
+ * - Re-calls analyze() with selectedFiles and initialFiles
+ *   (initialFiles avoids re-extracting the diff from scratch)
  */
 const renderFileSelector = (
   output: HTMLElement,
@@ -529,7 +533,7 @@ const renderFileSelector = (
           colorizeHeaders(output)
         },
         selectedFiles,
-        // Passa i file già parsati per evitare di ri-estrarre il diff
+        // Pass already-parsed files to avoid re-extracting the diff
         initialFiles: files,
       })
       if (analyzeBtn) {

@@ -1,36 +1,36 @@
 /**
- * github.ts — Adapter per GitHub. Implementa l'interfaccia Adapter.
+ * github.ts — GitHub adapter. Implements the Adapter interface.
  *
- * Responsabilità:
- * 1. Riconoscere se l'URL corrente è una PR GitHub (isMatch)
- * 2. Estrarre titolo/descrizione della PR dal DOM (extractContext)
- * 3. Estrarre il diff dei file modificati (extractDiff)
- * 4. Scaricare il contenuto completo di un file (fetchFullFile)
+ * Responsibilities:
+ * 1. Recognize if the current URL is a GitHub PR (isMatch)
+ * 2. Extract PR title/description from the DOM (extractContext)
+ * 3. Extract the diff of modified files (extractDiff)
+ * 4. Download the full content of a file (fetchFullFile)
  *
  * Pattern: ADAPTER
- * Traduce i dettagli specifici di GitHub (DOM, .diff URL, API) in RawDiff[],
- * il formato standard che il resto dell'app capisce.
+ * Translates GitHub-specific details (DOM, .diff URL, API) into RawDiff[],
+ * the standard format the rest of the app understands.
  *
- * Strategia per il diff (extractDiff):
- * 1. Prima prova: scarica il .diff unificato dalla URL della PR (es. /pull/42.diff)
- *    → Affidabile, contiene context lines, non dipende dal DOM
- * 2. Fallback: scraping del DOM della pagina (extractDiffFromDom)
- *    → Meno affidabile (i selettori CSS cambiano), no context lines,
- *      ma funziona se il .diff non è disponibile
+ * Diff extraction strategy (extractDiff):
+ * 1. First try: download the unified .diff from the PR URL (e.g. /pull/42.diff)
+ *    → Reliable, contains context lines, doesn't depend on the DOM
+ * 2. Fallback: DOM scraping of the page (extractDiffFromDom)
+ *    → Less reliable (CSS selectors change), no context lines,
+ *      but works if the .diff is unavailable
  */
 
 import type { Adapter, RawDiff } from '../types'
 
 // ===========================================================================
-// SEZIONE DOM SCRAPING (fallback) — usata solo se il .diff non è disponibile
+// DOM SCRAPING SECTION (fallback) — used only if .diff is unavailable
 // ===========================================================================
 
 /**
- * Normalizza una riga di testo estratta dal DOM.
- * - Sostituisce i non-breaking space (\u00a0) con spazi normali
- *   (GitHub li usa nel rendering del diff)
- * - Rimuove i carriage return (\r) per uniformità
- * - Toglie gli spazi finali
+ * Normalizes a text line extracted from the DOM.
+ * - Replaces non-breaking spaces (\u00a0) with regular spaces
+ *   (GitHub uses them in diff rendering)
+ * - Removes carriage returns (\r) for consistency
+ * - Trims trailing whitespace
  */
 const normalizeDiffLine = (value: string | null | undefined): string => {
   if (!value) return ''
@@ -38,18 +38,18 @@ const normalizeDiffLine = (value: string | null | undefined): string => {
 }
 
 /**
- * Estrae il testo del codice da una cella del diff nel DOM.
- * GitHub ha cambiato la struttura HTML più volte, quindi proviamo
- * diversi selettori in ordine di priorità.
- * Se nessun selettore matcha, fallback su innerText/textContent dell'elemento.
+ * Extracts code text from a diff cell in the DOM.
+ * GitHub has changed the HTML structure multiple times, so we try
+ * different selectors in priority order.
+ * If no selector matches, falls back to innerText/textContent of the element.
  */
 const getCodeText = (element: ParentNode): string => {
   const selectors = [
-    '.diff-text',        // UI più vecchia
-    '.diff-text-inner',  // variante
-    '.blob-code-inner',  // UI classica
-    '.react-code-text',  // UI React (nuova)
-    'code',              // fallback generico
+    '.diff-text',        // Older UI
+    '.diff-text-inner',  // Variant
+    '.blob-code-inner',  // Classic UI
+    '.react-code-text',  // React UI (new)
+    'code',              // Generic fallback
   ]
 
   for (const selector of selectors) {
@@ -66,16 +66,16 @@ const getCodeText = (element: ParentNode): string => {
 }
 
 /**
- * Scansiona il DOM di un file nel diff e raccoglie le righe aggiunte/rimosse.
- * Prova due strategie:
- * 1. Cerca nelle righe <tr> le celle con marcatore +/- (UI tabellare)
- * 2. Se non trova nulla, cerca direttamente le celle con classi blob-code-*
+ * Scans a file's DOM in the diff and collects added/removed lines.
+ * Tries two strategies:
+ * 1. Looks in <tr> rows for cells with +/- markers (tabular UI)
+ * 2. If nothing found, directly looks for cells with blob-code-* classes
  */
 const collectChangedLinesFromDom = (fileWrapper: ParentNode): { additions: string[]; deletions: string[] } => {
   const additions: string[] = []
   const deletions: string[] = []
 
-  // Strategia 1: tabella con righe <tr>, ogni riga ha celle addition/deletion
+  // Strategy 1: table with <tr> rows, each row has addition/deletion cells
   fileWrapper.querySelectorAll('tr').forEach((row) => {
     const additionCell = row.querySelector<HTMLElement>('td.blob-code-addition, td[data-code-marker="+"]')
     const deletionCell = row.querySelector<HTMLElement>('td.blob-code-deletion, td[data-code-marker="-"]')
@@ -91,12 +91,12 @@ const collectChangedLinesFromDom = (fileWrapper: ParentNode): { additions: strin
     }
   })
 
-  // Se la strategia 1 ha trovato qualcosa, ritorna subito
+  // If strategy 1 found something, return immediately
   if (additions.length > 0 || deletions.length > 0) {
     return { additions, deletions }
   }
 
-  // Strategia 2: cerca direttamente le celle con classi blob-code-*
+  // Strategy 2: directly look for cells with blob-code-* classes
   fileWrapper.querySelectorAll<HTMLElement>('.blob-code-addition, .blob-code-deletion').forEach((cell) => {
     const text = getCodeText(cell)
     if (!text) return
@@ -109,27 +109,27 @@ const collectChangedLinesFromDom = (fileWrapper: ParentNode): { additions: strin
 }
 
 // ===========================================================================
-// PARSER DEL DIFF UNIFICATO — approccio principale e più affidabile
+// UNIFIED DIFF PARSER — primary and most reliable approach
 // ===========================================================================
 
 /**
- * Parsa una stringa di diff unificato (scaricata da GitHub /pull/N.diff)
- * e la trasforma in un array di RawDiff.
+ * Parses a unified diff string (downloaded from GitHub /pull/N.diff)
+ * and transforms it into a RawDiff array.
  *
- * Formato del diff unificato:
+ * Unified diff format:
  * ```
- * diff --git a/file.ts b/file.ts       ← inizio di un nuovo file
- * --- a/file.ts                         ← file originale
- * +++ b/file.ts                         ← file modificato (da qui prendiamo il path)
- * @@ -10,7 +10,9 @@ function foo() {   ← inizio hunk (blocco di modifiche)
- *  riga di contesto (spazio iniziale)   ← codice invariato attorno alle modifiche
- * +riga aggiunta                        ← addition
- * -riga rimossa                         ← deletion
+ * diff --git a/file.ts b/file.ts       ← start of a new file
+ * --- a/file.ts                         ← original file
+ * +++ b/file.ts                         ← modified file (we get the path from here)
+ * @@ -10,7 +10,9 @@ function foo() {   ← hunk start (block of changes)
+ *  context line (leading space)          ← unchanged code around changes
+ * +added line                            ← addition
+ * -removed line                          ← deletion
  * ```
  *
- * Il parser è una macchina a stati semplice:
- * - `current`: il RawDiff del file che stiamo processando (null tra un file e l'altro)
- * - `inHunk`: true quando siamo dentro un blocco @@ (righe di codice)
+ * The parser is a simple state machine:
+ * - `current`: the RawDiff of the file being processed (null between files)
+ * - `inHunk`: true when inside an @@ block (code lines)
  */
 export const parseUnifiedDiff = (diffText: string): RawDiff[] => {
   const files: RawDiff[] = []
@@ -137,7 +137,7 @@ export const parseUnifiedDiff = (diffText: string): RawDiff[] => {
   let current: RawDiff | null = null
   let inHunk = false
 
-  /** Salva il file corrente nell'array e resetta lo stato */
+  /** Saves the current file to the array and resets state */
   const pushCurrent = (): void => {
     if (!current) return
     files.push(current)
@@ -146,19 +146,19 @@ export const parseUnifiedDiff = (diffText: string): RawDiff[] => {
   }
 
   for (const line of lines) {
-    // "diff --git" segna l'inizio di un nuovo file → salva il precedente
+    // "diff --git" marks the start of a new file → save the previous one
     if (line.startsWith('diff --git ')) {
       pushCurrent()
       continue
     }
 
-    // "+++ b/path/to/file" → estrai il percorso del file modificato
+    // "+++ b/path/to/file" → extract the modified file path
     if (line.startsWith('+++ ')) {
       const rawPath = line.slice(4).trim()
-      // Il path ha il prefisso "b/" nel diff unificato → lo rimuoviamo
+      // The path has a "b/" prefix in unified diff → remove it
       const path = rawPath.startsWith('b/') ? rawPath.slice(2) : rawPath
 
-      // I file cancellati puntano a /dev/null → li ignoriamo
+      // Deleted files point to /dev/null → skip them
       if (path === '/dev/null') {
         current = null
         inHunk = false
@@ -172,51 +172,51 @@ export const parseUnifiedDiff = (diffText: string): RawDiff[] => {
 
     if (!current) continue
 
-    // "@@ -10,7 +10,9 @@" → inizio di un hunk (blocco di modifiche)
+    // "@@ -10,7 +10,9 @@" → start of a hunk (block of changes)
     if (line.startsWith('@@ ')) {
       inHunk = true
       continue
     }
 
-    // Fuori dagli hunk non ci sono righe di codice
+    // Outside hunks there are no code lines
     if (!inHunk) continue
-    // Ignora il marker di fine file senza newline
+    // Ignore the end-of-file-without-newline marker
     if (line.startsWith('\\ No newline at end of file')) continue
 
-    // Il primo carattere di ogni riga indica il tipo:
-    // '+' = aggiunta, '-' = rimozione, ' ' = contesto (invariato)
+    // The first character of each line indicates the type:
+    // '+' = addition, '-' = removal, ' ' = context (unchanged)
     const marker = line[0]
     const content = line.slice(1)
 
     if (marker === '+') {
       current.additions.push(content)
-      current.rawLines.push(`+${content}`)  // ← aggiungi
+      current.rawLines.push(`+${content}`)
     } else if (marker === '-') {
       current.deletions.push(content)
-      current.rawLines.push(`-${content}`)  // ← aggiungi
+      current.rawLines.push(`-${content}`)
     } else if (marker === ' ') {
       current.context.push(content)
-      current.rawLines.push(` ${content}`)  // ← aggiungi
+      current.rawLines.push(` ${content}`)
     }
   }
 
-  // Non dimenticare l'ultimo file
+  // Don't forget the last file
   pushCurrent()
 
-  // Ritorna solo i file che hanno effettivamente delle modifiche
+  // Return only files that actually have changes
   return files.filter((file) => file.path && (file.additions.length > 0 || file.deletions.length > 0))
 }
 
 // ===========================================================================
-// GITHUB ADAPTER — implementazione dell'interfaccia Adapter per GitHub
+// GITHUB ADAPTER — Adapter interface implementation for GitHub
 // ===========================================================================
 
 export class GitHubAdapter implements Adapter {
 
   /**
-   * Controlla se l'URL è una PR GitHub.
-   * Formato atteso: https://github.com/{owner}/{repo}/pull/{number}
-   * Verifica hostname + struttura del path.
+   * Checks if the URL is a GitHub PR.
+   * Expected format: https://github.com/{owner}/{repo}/pull/{number}
+   * Verifies hostname + path structure.
    */
   isMatch(url: string): boolean {
     try {
@@ -226,7 +226,7 @@ export class GitHubAdapter implements Adapter {
         return false
       }
 
-      // Split del path: ["owner", "repo", "pull", "123", ...]
+      // Split the path: ["owner", "repo", "pull", "123", ...]
       const parts = parsed.pathname.split('/').filter(Boolean)
 
       return parts.length >= 4 && parts[2] === 'pull' && /^\d+$/.test(parts[3])
@@ -236,10 +236,10 @@ export class GitHubAdapter implements Adapter {
   }
 
   /**
-   * Estrae titolo e descrizione della PR dal DOM della pagina.
-   * I selettori usati sono quelli della UI corrente di GitHub:
-   * - .markdown-title → titolo della PR
-   * - .comment-body → primo commento = descrizione della PR
+   * Extracts PR title and description from the page DOM.
+   * Selectors used are from GitHub's current UI:
+   * - .markdown-title → PR title
+   * - .comment-body → first comment = PR description
    */
   extractContext(): { title: string; description: string } {
     const titleEl = document.querySelector('.markdown-title')
@@ -252,20 +252,20 @@ export class GitHubAdapter implements Adapter {
   }
 
   /**
-   * Fallback DOM: estrae i diff direttamente dal HTML della pagina.
-   * Usato solo se il .diff non è disponibile.
-   * Non cattura context lines (solo il diff unificato le ha).
+   * DOM fallback: extracts diffs directly from the page HTML.
+   * Used only if the .diff is unavailable.
+   * Does not capture context lines (only the unified diff has those).
    */
   private extractDiffFromDom(): RawDiff[] {
     const files: RawDiff[] = []
-    const seenPaths = new Set<string>() // evita duplicati
+    const seenPaths = new Set<string>() // avoid duplicates
     const fileHeaders = document.querySelectorAll<HTMLElement>('[data-file-path], [data-path]')
 
     for (const header of fileHeaders) {
       const path = header.getAttribute('data-file-path') ?? header.getAttribute('data-path')
       if (!path || seenPaths.has(path)) continue
 
-      // Risali nel DOM per trovare il contenitore del file intero
+      // Walk up the DOM to find the entire file container
       const fileWrapper =
         header.closest('[data-file-path]') ??
         header.closest('[data-path]') ??
@@ -286,9 +286,9 @@ export class GitHubAdapter implements Adapter {
   }
 
   /**
-   * Scarica il diff unificato dalla URL .diff della PR.
-   * Es: https://github.com/owner/repo/pull/42.diff
-   * Il fetch passa dal background script per evitare restrizioni CORS.
+   * Downloads the unified diff from the PR .diff URL.
+   * E.g.: https://github.com/owner/repo/pull/42.diff
+   * The fetch goes through the background script to avoid CORS restrictions.
    */
   async fetchUnifiedDiff(): Promise<string | null> {
     try {
@@ -318,11 +318,11 @@ export class GitHubAdapter implements Adapter {
   }
 
   /**
-   * Estrae i diff: prima prova il .diff (affidabile), poi fallback sul DOM.
-   * Questa è la funzione chiamata dall'analyzer.
+   * Extracts diffs: first tries .diff (reliable), then falls back to DOM.
+   * This is the function called by the analyzer.
    */
   async extractDiff(): Promise<RawDiff[]> {
-    // Tentativo 1: diff unificato (preferito — ha context lines)
+    // Attempt 1: unified diff (preferred — has context lines)
     const diffText = await this.fetchUnifiedDiff()
 
     if (diffText) {
@@ -330,13 +330,13 @@ export class GitHubAdapter implements Adapter {
       if (parsed.length > 0) return parsed
     }
 
-    // Tentativo 2: fallback sul DOM (niente context lines)
+    // Attempt 2: fall back to DOM (no context lines)
     return this.extractDiffFromDom()
   }
 
   /**
-   * Estrae owner, repo e numero PR dalla URL corrente.
-   * Es: /facebook/react/pull/42 → { owner: "facebook", repo: "react", pr: "42" }
+   * Extracts owner, repo and PR number from the current URL.
+   * E.g.: /facebook/react/pull/42 → { owner: "facebook", repo: "react", pr: "42" }
    */
   private getPrInfo(): { owner: string; repo: string; pr: string } | null {
     const match = window.location.pathname.match(/^\/([^/]+)\/([^/]+)\/pull\/(\d+)/)
@@ -345,17 +345,17 @@ export class GitHubAdapter implements Adapter {
   }
 
   /**
-   * Scarica il contenuto completo di un file dalla PR (mode "Full context").
+   * Downloads the full content of a file from the PR ("Full context" mode).
    *
-   * Strategia a due tentativi:
-   * 1. raw.githubusercontent.com — più veloce, rate limit molto più alto dell'API
-   * 2. Fallback: GitHub Contents API — più lento, 60 req/ora senza token
+   * Two-attempt strategy:
+   * 1. raw.githubusercontent.com — faster, much higher rate limit than the API
+   * 2. Fallback: GitHub Contents API — slower, 60 req/hour without token
    *
-   * Il ref "refs/pull/{number}/head" è un ref Git speciale di GitHub che punta
-   * sempre all'ultimo commit della PR — non serve conoscere il nome del branch.
+   * The ref "refs/pull/{number}/head" is a special GitHub Git ref that always
+   * points to the latest PR commit — no need to know the branch name.
    *
-   * Se entrambi falliscono, ritorna { content: null } e l'analyzer mostrerà
-   * un warning all'utente.
+   * If both fail, returns { content: null } and the analyzer will show
+   * a warning to the user.
    */
   async fetchFullFile(path: string): Promise<{
     content: string | null
@@ -366,12 +366,12 @@ export class GitHubAdapter implements Adapter {
 
     const { owner, repo, pr } = prInfo
 
-    // Legge il token GitHub dallo storage (può essere vuoto)
+    // Read GitHub token from storage (may be empty)
     const settings = await chrome.runtime.sendMessage({ type: 'GET_SETTINGS' })
     const token = settings?.githubToken || ''
 
-    // --- Tentativo 1: raw.githubusercontent.com ---
-    // Rate limit ~1000s/ora, no overhead API JSON, risposta diretta con il file grezzo.
+    // --- Attempt 1: raw.githubusercontent.com ---
+    // Rate limit ~1000s/hour, no API JSON overhead, direct raw file response.
     try {
       const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/refs/pull/${pr}/head/${path}`
       const rawResponse: { ok: boolean; status: number; text?: string } =
@@ -383,10 +383,10 @@ export class GitHubAdapter implements Adapter {
       if (rawResponse?.ok && rawResponse.text) {
         return { content: rawResponse.text, source: 'raw' }
       }
-    } catch { /* fallthrough al tentativo 2 */ }
+    } catch { /* fall through to attempt 2 */ }
 
-    // --- Tentativo 2: GitHub Contents API ---
-    // Più lento e con rate limit più basso (60/ora senza token, 5000/ora con token).
+    // --- Attempt 2: GitHub Contents API ---
+    // Slower with lower rate limit (60/hour without token, 5000/hour with token).
     try {
       const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=pull/${pr}/head`
       const apiResponse: { ok: boolean; status: number; text?: string } =
@@ -398,7 +398,7 @@ export class GitHubAdapter implements Adapter {
       if (apiResponse?.ok && apiResponse.text) {
         return { content: apiResponse.text, source: 'api' }
       }
-    } catch { /* nessun fallback rimasto */ }
+    } catch { /* no fallback left */ }
 
     return { content: null, source: null }
   }

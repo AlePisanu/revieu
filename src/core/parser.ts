@@ -1,25 +1,25 @@
 /**
- * parser.ts — Arricchisce i dati grezzi dell'adapter prima di passarli al prompt.
+ * parser.ts — Enriches raw adapter data before passing it to the prompt.
  *
- * Responsabilità:
- * 1. Rilevare il linguaggio di programmazione dall'estensione del file
- * 2. Trasformare RawDiff[] (dati grezzi) → DiffFile[] (dati arricchiti)
+ * Responsibilities:
+ * 1. Detect the programming language from the file extension
+ * 2. Transform RawDiff[] (raw data) → DiffFile[] (enriched data)
  *
- * Questo file è il secondo step della pipeline:
+ * This file is the second step in the pipeline:
  *   Adapter → [RawDiff[]] → **parser** → [DiffFile[]] → prompt → AI
  *
- * Perché esiste (e non è nell'adapter):
- * L'adapter si occupa solo di estrarre dati dalla piattaforma (GitHub).
- * Il parser aggiunge informazioni generiche (linguaggio, conteggi) che
- * non dipendono dalla piattaforma — funzionano uguale per GitHub, GitLab, ecc.
+ * Why it exists (and isn't in the adapter):
+ * The adapter only handles extracting data from the platform (GitHub).
+ * The parser adds generic information (language, counts) that
+ * doesn't depend on the platform — works the same for GitHub, GitLab, etc.
  */
 
 import type { RawDiff, DiffFile } from '../types'
 
 /**
- * Mappa estensione file → nome linguaggio leggibile.
- * Usata nel prompt per dire all'AI in che linguaggio è scritto il file,
- * così può applicare regole specifiche (es. pattern React per .tsx).
+ * Map of file extension → readable language name.
+ * Used in the prompt to tell the AI what language the file is written in,
+ * so it can apply language-specific rules (e.g. React patterns for .tsx).
  */
 const LANGUAGE_MAP: Record<string, string> = {
   '.ts': 'TypeScript',
@@ -52,17 +52,17 @@ const LANGUAGE_MAP: Record<string, string> = {
 }
 
 /**
- * Rileva il linguaggio di un file dal suo percorso.
- * Gestisce casi speciali come "Dockerfile" (senza estensione).
- * Per file con estensione, prende l'ultima (es. "foo.test.ts" → ".ts").
+ * Detects the language of a file from its path.
+ * Handles special cases like "Dockerfile" (no extension).
+ * For files with an extension, takes the last one (e.g. "foo.test.ts" → ".ts").
  */
 export const detectLanguage = (filePath: string): string => {
   const basename = filePath.split('/').pop() ?? ''
 
-  // File speciali senza estensione
+  // Special files without an extension
   if (basename.toLowerCase() === 'dockerfile') return 'Dockerfile'
 
-  // Prendi l'ultima estensione (dopo l'ultimo punto)
+  // Take the last extension (after the last dot)
   const dotIndex = basename.lastIndexOf('.')
   if (dotIndex === -1) return 'Unknown'
 
@@ -71,12 +71,12 @@ export const detectLanguage = (filePath: string): string => {
 }
 
 /**
- * Trasforma i dati grezzi dell'adapter in DiffFile arricchiti.
- * Per ogni file aggiunge:
- * - language: linguaggio rilevato dall'estensione
- * - context: righe di contesto (passate direttamente dal RawDiff)
- * - fullContent/fullLineCount: contenuto completo se disponibile
- * - totalLines: somma additions + deletions (per stimare la dimensione)
+ * Transforms raw adapter data into enriched DiffFiles.
+ * For each file adds:
+ * - language: detected from the file extension
+ * - context: context lines (passed directly from RawDiff)
+ * - fullContent/fullLineCount: full content if available
+ * - totalLines: sum of additions + deletions (to estimate diff size)
  */
 export const parseDiff = (rawDiffs: RawDiff[]): DiffFile[] => {
   return rawDiffs.map((raw) => ({

@@ -1,30 +1,30 @@
 /**
- * prompt.ts — Costruisce i messaggi da mandare all'AI.
+ * prompt.ts — Builds the messages to send to the AI.
  *
- * Responsabilità:
- * 1. buildSystemPrompt: crea le istruzioni di sistema (chi sei, come rispondere, formato)
- * 2. buildUserMessage: assembla il messaggio utente con diff, contesto, e file completi
+ * Responsibilities:
+ * 1. buildSystemPrompt: creates system instructions (who you are, how to respond, format)
+ * 2. buildUserMessage: assembles the user message with diff, context, and full files
  *
- * Questo file è il penultimo step della pipeline:
+ * This file is the second-to-last step in the pipeline:
  *   Adapter → parser → analyzer → **prompt** → [system + user message] → AI provider
  *
  * Pattern: TEMPLATE / BUILDER
- * Il prompt è costruito assemblando blocchi (titolo PR, context lines, diff, file completi)
- * in un formato testuale strutturato che l'AI sa interpretare.
- * Ogni blocco è opzionale — il prompt si adatta a ciò che è disponibile.
+ * The prompt is built by assembling blocks (PR title, context lines, diff, full files)
+ * into a structured text format the AI knows how to interpret.
+ * Each block is optional — the prompt adapts to what's available.
  */
 
 import type { DiffFile } from '../types'
 
 // ---------------------------------------------------------------------------
-// SYSTEM PROMPT: istruzioni per l'AI su come comportarsi
+// SYSTEM PROMPT: instructions for the AI on how to behave
 // ---------------------------------------------------------------------------
 
 /**
- * Prompt base che definisce il ruolo dell'AI e il formato di output.
- * Le sezioni 🔴/🟡/🟢 forzano una risposta strutturata e facile da leggere.
- * "&#58;" è l'HTML entity per ":" — evita che l'AI interpreti i due punti
- * come parte della formattazione markdown.
+ * Base prompt defining the AI's role and output format.
+ * The sections Critical/Improvements/Minor enforce a structured, readable response.
+ * "&#58;" is the HTML entity for ":" — prevents the AI from interpreting colons
+ * as part of markdown formatting.
  */
 const BASE_SYSTEM_PROMPT = `
 You are a senior software engineer reviewing a pull request.
@@ -62,10 +62,10 @@ Keep reasoning minimal. Do not over-analyze.
 `
 
 /**
- * Modificatori di tono — appenditi al system prompt in base alla scelta dell'utente.
- * - balanced: nessuna modifica (tono neutro)
- * - strict: l'AI diventa più aggressiva nel cercare problemi
- * - security: l'AI si concentra su vulnerabilità di sicurezza
+ * Tone modifiers — appended to the system prompt based on the user's choice.
+ * - balanced: no modification (neutral tone)
+ * - strict: the AI becomes more aggressive in finding issues
+ * - security: the AI focuses on security vulnerabilities
  */
 const TONE_MODIFIERS: Record<string, string> = {
   balanced: '',
@@ -73,32 +73,32 @@ const TONE_MODIFIERS: Record<string, string> = {
   security: 'Focus on security vulnerabilities, unsafe data handling, and access control.',
 }
 
-/** Combina il prompt base con il modificatore di tono scelto dall'utente */
+/** Combines the base prompt with the user's chosen tone modifier */
 export const buildSystemPrompt = (tone: string): string => {
   const modifier = TONE_MODIFIERS[tone] ?? ''
   return modifier ? `${BASE_SYSTEM_PROMPT}\n${modifier}` : BASE_SYSTEM_PROMPT
 }
 
 // ---------------------------------------------------------------------------
-// USER MESSAGE: il contenuto della PR formattato per l'AI
+// USER MESSAGE: PR content formatted for the AI
 // ---------------------------------------------------------------------------
 
 /**
- * Assembla il messaggio utente con tutti i dati della PR.
+ * Assembles the user message with all PR data.
  *
- * Il messaggio ha questa struttura:
- * 1. Istruzioni — spiega all'AI la notazione (+/-/spazio)
- * 2. Titolo e descrizione della PR — contesto ad alto livello
- * 3. Dependency map (opzionale) — chi importa da chi (per feature futura)
- * 4. Per ogni file:
- *    a. File completo (solo in mode "full" se disponibile)
- *    b. Context lines — codice invariato attorno alle modifiche
- *    c. Modified lines — additions (+) e deletions (-)
+ * The message has this structure:
+ * 1. Instructions — explains the notation (+/-/space) to the AI
+ * 2. PR title and description — high-level context
+ * 3. Dependency map (optional) — who imports from whom (for future feature)
+ * 4. For each file:
+ *    a. Full file (only in "full" mode if available)
+ *    b. Context lines — unchanged code around modifications
+ *    c. Modified lines — additions (+) and deletions (-)
  *
- * @param context - titolo e descrizione della PR (da adapter.extractContext)
- * @param files - i file arricchiti dal parser
- * @param mode - "diff" (solo modifiche) o "full" (file completo + modifiche)
- * @param depMap - mappa delle dipendenze tra file (opzionale, per uso futuro)
+ * @param context - PR title and description (from adapter.extractContext)
+ * @param files - enriched files from the parser
+ * @param mode - "diff" (changes only) or "full" (full file + changes)
+ * @param depMap - dependency map between files (optional, for future use)
  */
 export const buildUserMessage = (
   context: { title: string; description: string },
@@ -108,7 +108,7 @@ export const buildUserMessage = (
 ): string => {
   const parts: string[] = []
 
-  // Istruzioni per l'AI sulla notazione usata nel diff
+  // Instructions for the AI on the notation used in the diff
   parts.push(`
     Instructions:
     - Lines starting with "+" are additions
@@ -118,14 +118,14 @@ export const buildUserMessage = (
     - Focus on added code unless removals introduce issues
   `)
 
-  // Titolo e descrizione della PR — danno all'AI il "perché" delle modifiche
+  // PR title and description — give the AI the "why" behind the changes
   parts.push(`## PR: ${context.title}`)
   if (context.description) {
     parts.push(`**Description:** ${context.description}`)
   }
 
-  // Mappa delle dipendenze (es. "file A importa da file B")
-  // Non ancora popolata — predisposta per una feature futura
+  // Dependency map (e.g. "file A imports from file B")
+  // Not yet populated — prepared for a future feature
   if (depMap && Object.keys(depMap).length > 0) {
     parts.push('\n## Dependency map')
     for (const [file, deps] of Object.entries(depMap)) {
@@ -135,14 +135,14 @@ export const buildUserMessage = (
     }
   }
 
-  // Sezione principale: i file modificati
+  // Main section: modified files
   parts.push('\n## Changes')
 
   for (const file of files) {
     parts.push(`\n### ${file.path} (${file.language})`)
 
-    // In mode "full", se il file completo è disponibile, lo includiamo.
-    // Questo dà all'AI il contesto dell'intero file (non solo gli hunk).
+    // In "full" mode, if the full file is available, include it.
+    // This gives the AI the context of the entire file (not just the hunks).
     if (mode === 'full' && file.fullContent) {
       parts.push('**Full file:**')
       parts.push('```')
@@ -150,8 +150,8 @@ export const buildUserMessage = (
       parts.push('```')
     }
 
-    // Context lines: codice invariato attorno alle modifiche (~3 righe per hunk).
-    // Presente anche in mode "diff" — viene dal diff unificato gratis.
+    // Context lines: unchanged code around modifications (~3 lines per hunk).
+    // Present even in "diff" mode — comes from the unified diff for free.
     parts.push('**Diff:**')
     for (const line of file.rawLines) {
       parts.push(line)
