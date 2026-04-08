@@ -57,7 +57,6 @@ export class AnthropicProvider implements Provider {
         max_tokens: MAX_TOKENS,
         stream: true,
         temperature: 0,
-        top_p: 0.1,
         system: systemPrompt,
         messages: [{ role: 'user', content: userMessage }],
       }),

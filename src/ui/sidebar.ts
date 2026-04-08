@@ -232,7 +232,6 @@ export const createSidebar = (): HTMLElement => {
 
   // Hide onboarding if already dismissed
   chrome.storage.sync.get('sidebarOnboarded', (res) => {
-    console.log('Onboarding done:', res.sidebarOnboarded)
     if (res.sidebarOnboarded) {
       sidebar.querySelector('.revieu-onboarding-tips')?.classList.add('revieu-hidden-el')
     }
@@ -388,7 +387,6 @@ export const wireAnalyzer = (adapter: Adapter): void => {
   btn.addEventListener('click', () => {
     // Hide onboarding tips permanently on first analyze
     const onboarding = document.querySelector(`#${SIDEBAR_ID} .revieu-onboarding-tips`)
-    console.log('Hiding onboarding tips')
     if (onboarding && !onboarding.classList.contains('revieu-hidden-el')) {
       onboarding.classList.add('revieu-hidden-el')
       chrome.storage.sync.set({ sidebarOnboarded: true })
