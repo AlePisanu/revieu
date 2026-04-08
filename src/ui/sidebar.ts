@@ -427,7 +427,7 @@ export const wireAnalyzer = (adapter: Adapter): void => {
         if (loaderContainer && loaderVisible) {
           loaderContainer.insertAdjacentHTML('beforeend', '<p class="revieu-slow-hint">It\'s taking longer than usual...</p>')
         }
-      }, 5000)
+      }, 20000)
 
       try {
         await analyze({

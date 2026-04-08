@@ -99,6 +99,11 @@ export class GeminiProvider implements Provider {
           parts: [{ text: userMessage }],
         },
       ],
+      generationConfig: {
+        temperature: 0,
+        topP: 0.1,
+        topK: 1,
+      },
     })
 
     let response: Response | null = null
