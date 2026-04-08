@@ -532,7 +532,7 @@
 }
 
 .revieu-logo {
-  width: 35px;
+  width: 30px;
   height: auto;
 }
 
@@ -647,6 +647,7 @@
 
 /* HEADER LEFT */
 .revieu-header-left {
+  margin: 0 auto;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -696,7 +697,8 @@
 .revieu-settings-popover {
   position: absolute;
   top: calc(100% + 10px);
-  left: 12px;
+  left: 50%;
+  transform: translateX(-50%);
 
   width: 320px;
 
@@ -729,7 +731,7 @@
 .revieu-settings-arrow {
   position: absolute;
   top: -5px;
-  left: 20px;
+  left: 156px;
 
   width: 10px;
   height: 10px;

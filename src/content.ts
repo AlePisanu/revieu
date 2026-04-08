@@ -47,10 +47,12 @@ const init = () => {
 
   // Inject the sidebar (no-op if already present)
   createSidebar()
+  // Wire the "Analyze PR" button to the review flow
+  // (must happen BEFORE loadSettings so the cloned button is in the DOM
+  //  when the async settings callback enables/disables it)
+  wireAnalyzer(adapter)
   // Sync selectors with saved settings
   loadSettings()
-  // Wire the "Analyze PR" button to the review flow
-  wireAnalyzer(adapter)
 }
 
 // Initialize on first page load
