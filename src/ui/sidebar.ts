@@ -127,10 +127,10 @@ export const createSidebar = (): HTMLElement => {
   tab.id = TAB_ID
 
   const img = document.createElement('img')
-  img.src = chrome.runtime.getURL('icons/logo-48.png')
+  img.src = chrome.runtime.getURL('icons/logo-white.png')
   img.alt = 'Revieu'
   img.style.width = '20px'
-  img.style.height = '20px'
+  img.style.height = 'auto'
 
   tab.appendChild(img)
   tab.setAttribute('role', 'button')
