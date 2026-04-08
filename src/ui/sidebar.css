@@ -698,7 +698,6 @@
   position: absolute;
   top: calc(100% + 10px);
   left: 50%;
-  transform: translateX(-50%);
 
   width: 320px;
 
@@ -714,7 +713,7 @@
   padding: 16px;
 
   opacity: 0;
-  transform: translateY(-6px) scale(0.98);
+  transform: translateY(-6px) scale(0.98) translateX(-50%);
   pointer-events: none;
 
   transition:
@@ -724,7 +723,7 @@
 
 .revieu-settings-popover.revieu-popover-open {
   opacity: 1;
-  transform: translateY(0) scale(1);
+  transform: translateY(0) scale(1) translateX(-50%);
   pointer-events: all;
 }
 
