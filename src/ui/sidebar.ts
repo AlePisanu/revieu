@@ -312,6 +312,23 @@ const hideClearButton = (): void => {
   getClearButton()?.classList.remove('revieu-clear-visible')
 }
 
+/** Shows a Lottie loader animation in the output area. Returns a destroy function. */
+const showLoader = (output: HTMLElement): (() => void) => {
+  output.innerHTML = '<div class="revieu-loader-container"></div>'
+  const container = output.querySelector('.revieu-loader-container') as HTMLElement
+  const anim = lottie.loadAnimation({
+    container,
+    renderer: 'svg',
+    loop: true,
+    autoplay: true,
+    path: chrome.runtime.getURL('assets/loader.json'),
+  })
+  return () => {
+    anim.destroy()
+    output.innerHTML = ''
+  }
+}
+
 // ===========================================================================
 // ANALYZE BUTTON → ANALYZER WIRING
 // ===========================================================================
@@ -354,15 +371,17 @@ export const wireAnalyzer = (adapter: Adapter): void => {
         return
       }
 
-      output.innerHTML = ''
       hideFooter()
       hideClearButton()
       btn.disabled = true
       btn.innerHTML = `${PR_ICON} Analyzing<span class="revieu-dots"></span>`
 
+      const destroyLoader = showLoader(output)
+
       // Accumulates raw markdown — needed for copy and token estimate
       let rawMarkdown = ''
       let showingFileSelector = false
+      let loaderVisible = true
 
       try {
         await analyze({
@@ -372,6 +391,11 @@ export const wireAnalyzer = (adapter: Adapter): void => {
           provider,
           apiKey,
           onChunk: (text) => {
+            // Remove loader on first chunk
+            if (loaderVisible) {
+              destroyLoader()
+              loaderVisible = false
+            }
             rawMarkdown += text
             // Re-renders all markdown on every chunk.
             // Not the most efficient, but `marked` is fast and ensures
@@ -383,6 +407,10 @@ export const wireAnalyzer = (adapter: Adapter): void => {
         showFooter(rawMarkdown)
         showClearButton()
       } catch (err) {
+        if (loaderVisible) {
+          destroyLoader()
+          loaderVisible = false
+        }
         // TooLargeError: diff exceeds the limit → show file selector
         if (err instanceof TooLargeError) {
           showingFileSelector = true
