@@ -36,6 +36,8 @@ interface StorageData {
   provider: 'anthropic' | 'gemini'
   tone: 'balanced' | 'strict' | 'security'
   mode: 'diff' | 'full'
+  popupOnboarded: string
+  sidebarOnboarded: string
   [key: string]: string
 }
 
@@ -47,6 +49,8 @@ const DEFAULTS: StorageData = {
   provider: 'gemini',
   tone: 'balanced',
   mode: 'diff',
+  popupOnboarded: '',
+  sidebarOnboarded: '',
 }
 
 // ---------------------------------------------------------------------------

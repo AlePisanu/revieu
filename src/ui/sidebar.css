@@ -19,7 +19,7 @@
   --revieu-text-accent: #3b82f6;        /* blu standard moderno */
 
   /* header */
-  --revieu-header-bg: #ffffff;
+  --revieu-header-bg: #fafafa;
   --revieu-header-border: #f4f4f5;
   --revieu-header-text: #111111;
 
@@ -478,7 +478,7 @@
 
 /* HIDDEN */
 .revieu-hidden-el {
-  display: none;
+  display: none !important;
 }
 
 /* TOGGLE TAB */
@@ -819,19 +819,67 @@
   border-left: 4px solid var(--revieu-improvements-color);
 }
 
+/* ONBOARDING TIPS */
+.revieu-onboarding-tips {
+  margin-top: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  width: 100%;
+  max-width: 280px;
+}
+
+.revieu-tip-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.8rem;
+  color: var(--revieu-text-secondary);
+  text-align: left;
+  line-height: 1.4;
+  padding: 8px;
+  border: 1px solid var(--revieu-border);
+  border-radius: 8px;
+}
+
+.revieu-tip-trigger {
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+.revieu-tip-icon {
+  flex-shrink: 0;
+  color: var(--revieu-text-muted);
+}
+
 .revieu-lottie-container {
   width: 120px;
 }
 
 .revieu-loader-container {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   width: 100%;
   height: 100%;
+  gap: 12px;
 }
 
 .revieu-loader-container svg {
   width: 80px !important;
   height: 80px !important;
+}
+
+.revieu-slow-hint {
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--revieu-text-muted);
+  margin: 0;
+  animation: revieu-fade-in 0.4s ease;
+}
+
+@keyframes revieu-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
 }

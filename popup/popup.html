@@ -174,6 +174,56 @@
       width: 35px;
       height: auto;
     }
+
+    /* ONBOARDING */
+    .onboarding {
+      margin-bottom: 16px;
+      padding: 14px;
+      background: var(--popup-input-bg);
+      border: 1px solid var(--popup-input-border);
+      border-radius: 8px;
+    }
+
+    .onboarding-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--popup-text);
+      margin-bottom: 10px;
+    }
+
+    .onboarding-steps {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .onboarding-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--popup-text-secondary);
+      line-height: 1.4;
+    }
+
+    .step-number {
+      flex-shrink: 0;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--popup-btn-bg);
+      color: var(--popup-btn-text);
+      font-size: 10px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .onboarding.hidden {
+      display: none;
+    }
   </style>
 </head>
 
@@ -183,6 +233,24 @@
     <img src="../icons/logo-black.png" alt="Revieu" class="revieu-logo-popup">
   </picture>
   
+  <div class="onboarding hidden" id="onboarding">
+    <p class="onboarding-title">Get started</p>
+    <ol class="onboarding-steps">
+      <li class="onboarding-step">
+        <span class="step-number">1</span>
+        Add an API key below (Gemini is free)
+      </li>
+      <li class="onboarding-step">
+        <span class="step-number">2</span>
+        Open a Pull Request on GitHub
+      </li>
+      <li class="onboarding-step">
+        <span class="step-number">3</span>
+        Click the Revieu bookmark on the right side of the GitHub page and hit Analyze PR
+      </li>
+    </ol>
+  </div>
+
   <div class="field">
     <label for="anthropic-key">Anthropic API Key</label>
     <input type="password" id="anthropic-key" placeholder="sk-ant-...">

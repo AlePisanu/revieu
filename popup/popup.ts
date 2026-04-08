@@ -20,6 +20,7 @@ const geminiInput = document.getElementById('gemini-key') as HTMLInputElement
 const githubInput = document.getElementById('github-token') as HTMLInputElement
 const saveBtn = document.getElementById('save-btn') as HTMLButtonElement
 const statusEl = document.getElementById('status') as HTMLElement
+const onboardingEl = document.getElementById('onboarding') as HTMLElement
 
 // Load saved settings when the popup opens
 chrome.runtime.sendMessage({ type: 'GET_SETTINGS' }, (settings) => {
@@ -27,14 +28,25 @@ chrome.runtime.sendMessage({ type: 'GET_SETTINGS' }, (settings) => {
   anthropicInput.value = settings.anthropicKey ?? ''
   geminiInput.value = settings.geminiKey ?? ''
   githubInput.value = settings.githubToken ?? ''
+
+  // Show onboarding banner only if not yet dismissed
+  if (!settings.popupOnboarded) {
+    onboardingEl.classList.remove('hidden')
+  }
 })
 
 // Save all settings on "Save" click
 saveBtn.addEventListener('click', () => {
-  const payload = {
+  const payload: Record<string, string> = {
     anthropicKey: anthropicInput.value.trim(),
     geminiKey: geminiInput.value.trim(),
     githubToken: githubInput.value.trim(),
+  }
+
+  // Dismiss onboarding on first save
+  if (!onboardingEl.classList.contains('hidden')) {
+    payload.popupOnboarded = '1'
+    onboardingEl.classList.add('hidden')
   }
 
   chrome.runtime.sendMessage({ type: 'SAVE_SETTINGS', payload }, (response) => {

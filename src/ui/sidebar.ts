@@ -78,6 +78,13 @@ export const createSidebar = (): HTMLElement => {
       <div class="revieu-settings-arrow"></div>
       <div class="revieu-controls">
         <label class="revieu-label">
+          Provider
+          <select class="revieu-select" data-setting="provider">
+            <option value="anthropic">Claude</option>
+            <option value="gemini">Gemini</option>
+          </select>
+        </label>
+        <label class="revieu-label">
           Mode
           <select class="revieu-select" data-setting="mode">
             <option value="diff">Diff only</option>
@@ -92,13 +99,6 @@ export const createSidebar = (): HTMLElement => {
             <option value="security">Security-focused</option>
           </select>
         </label>
-        <label class="revieu-label">
-          Provider
-          <select class="revieu-select" data-setting="provider">
-            <option value="anthropic">Claude</option>
-            <option value="gemini">Gemini</option>
-          </select>
-        </label>
       </div>
     </div>
   </div>
@@ -107,6 +107,28 @@ export const createSidebar = (): HTMLElement => {
       <div class="revieu-empty-state">
         <div class="revieu-lottie-container"></div>
         <h3 class="revieu-empty-title">Ready for a Code Review?</h3>
+        <div class="revieu-onboarding-tips">
+          <div class="revieu-tip-item">
+            <span class="revieu-settings-trigger revieu-tip-trigger" aria-hidden="true">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M6 9l6 6 6-6"/>
+              </svg>
+            </span>
+            <span>Tap this arrow next to Revieu to open settings</span>
+          </div>
+          <div class="revieu-tip-item">
+            <svg class="revieu-tip-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a5 5 0 0 1 5 5v3a5 5 0 0 1-10 0V7a5 5 0 0 1 5-5z"/><path d="M15 14l4.5 4.5"/><path d="M9 14l-4.5 4.5"/><path d="M12 18v4"/></svg>
+            <span>Choose your AI provider</span>
+          </div>
+          <div class="revieu-tip-item">
+            <svg class="revieu-tip-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            <span>Select mode and tone</span>
+          </div>
+          <div class="revieu-tip-item">
+            <svg class="revieu-tip-icon" width="22" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            <span>Click Analyze PR to start</span>
+          </div>
+        </div>
       </div>
     </div>
     <div class="revieu-bottom-bar">
@@ -207,6 +229,14 @@ export const createSidebar = (): HTMLElement => {
       path: chrome.runtime.getURL('assets/ai.json'),
     })
   }
+
+  // Hide onboarding if already dismissed
+  chrome.storage.sync.get('sidebarOnboarded', (res) => {
+    console.log('Onboarding done:', res.sidebarOnboarded)
+    if (res.sidebarOnboarded) {
+      sidebar.querySelector('.revieu-onboarding-tips')?.classList.add('revieu-hidden-el')
+    }
+  })
 
   // Starts closed by default
   sidebar.classList.add('revieu-hidden')
@@ -356,6 +386,14 @@ export const wireAnalyzer = (adapter: Adapter): void => {
   oldBtn.replaceWith(btn)
 
   btn.addEventListener('click', () => {
+    // Hide onboarding tips permanently on first analyze
+    const onboarding = document.querySelector(`#${SIDEBAR_ID} .revieu-onboarding-tips`)
+    console.log('Hiding onboarding tips')
+    if (onboarding && !onboarding.classList.contains('revieu-hidden-el')) {
+      onboarding.classList.add('revieu-hidden-el')
+      chrome.storage.sync.set({ sidebarOnboarded: true })
+    }
+
     const output = getOutputElement()
     if (!output) return
 
@@ -383,6 +421,14 @@ export const wireAnalyzer = (adapter: Adapter): void => {
       let showingFileSelector = false
       let loaderVisible = true
 
+      // Show a hint if the AI takes too long to respond
+      const slowTimer = setTimeout(() => {
+        const loaderContainer = output.querySelector('.revieu-loader-container')
+        if (loaderContainer && loaderVisible) {
+          loaderContainer.insertAdjacentHTML('beforeend', '<p class="revieu-slow-hint">It\'s taking longer than usual...</p>')
+        }
+      }, 5000)
+
       try {
         await analyze({
           adapter,
@@ -393,6 +439,7 @@ export const wireAnalyzer = (adapter: Adapter): void => {
           onChunk: (text) => {
             // Remove loader on first chunk
             if (loaderVisible) {
+              clearTimeout(slowTimer)
               destroyLoader()
               loaderVisible = false
             }
@@ -407,6 +454,7 @@ export const wireAnalyzer = (adapter: Adapter): void => {
         showFooter(rawMarkdown)
         showClearButton()
       } catch (err) {
+        clearTimeout(slowTimer)
         if (loaderVisible) {
           destroyLoader()
           loaderVisible = false
