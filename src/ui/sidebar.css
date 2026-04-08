@@ -271,7 +271,6 @@
 .revieu-btn-row {
   display: flex;
   gap: 8px;
-  margin-top: auto;
 }
 
 /* PRIMARY BUTTON */
@@ -540,12 +539,25 @@
 /* OUTPUT */
 .revieu-output {
   flex: 1;
+  overflow-y: auto;
 
   line-height: normal;
   font-size: 13px;
   color: var(--revieu-output-text);
 
   white-space: pre-wrap;
+
+  scrollbar-width: thin;
+  scrollbar-color: var(--revieu-border) transparent;
+  padding: 0 7px;
+}
+
+/* BOTTOM BAR — fixed at bottom, never scrolls */
+.revieu-bottom-bar {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .revieu-output h2 {
@@ -573,14 +585,14 @@
 
 .revieu-output ul li {
   padding: 10px 12px;
-  border-top-right-radius: 8px;
-  border-bottom-right-radius: 8px;
   background: var(--revieu-bg-subtle);
   border: 1px solid var(--revieu-border-light);
   border-left: 3px solid transparent;
   font-size: 13px;
   line-height: 1.6;
   color: var(--revieu-output-text);
+  border-radius: 8px;
+  overflow: hidden;
 }
 
 .revieu-critical + ul li,
@@ -597,33 +609,30 @@
   content: "";
   position: absolute;
   left: 0;
-  top: 0.2rem;
-  bottom: 0.2rem;
+  top: 0;
+  bottom: 0;
   width: 5px;
   background: var(--revieu-critical-color);
-  border-radius: 9999px;          /* bordi arrotondati */
 }
 
 .revieu-improvements + ul li::before {
   content: "";
   position: absolute;
   left: 0;
-  top: 0.2rem;
-  bottom: 0.2rem;
+  top: 0;
+  bottom: 0;
   width: 5px;
   background: var(--revieu-improvements-color);
-  border-radius: 9999px;
 }
 
 .revieu-minor + ul li::before {
   content: "";
   position: absolute;
   left: 0;
-  top: 0.2rem;
-  bottom: 0.2rem;
+  top: 0;
+  bottom: 0;
   width: 5px;
   background: var(--revieu-minor-color);
-  border-radius: 9999px;
 }
 
 .revieu-output code {
@@ -770,27 +779,27 @@
 .revieu-empty-state {
   text-align: center;
   padding: 2.5rem 1.5rem 3.5rem;
-  color: var(--color-fg-muted);
+  color: var(--revieu-text-muted);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   min-height: 420px;
-  gap: 1.25rem;
+  gap: 0.5rem;
 }
 
 .revieu-empty-title {
-  font-size: 1.4rem;
+  font-size: 1rem;
   font-weight: 600;
-  color: var(--color-fg-default);
-  margin: 0 0 0.8rem 0;
+  color: var(--revieu-text);
+  margin: 0;
 }
 
 .revieu-empty-description {
-  font-size: 0.96rem;
-  line-height: 1.55;
-  max-width: 290px;
-  margin: 0 auto;
+  font-size: 0.8rem;
+  color: var(--revieu-text-muted);
+  margin: 0;
+  line-height: 1.5;
 }
 
 .revieu-empty-tips {
@@ -808,4 +817,8 @@
   font-size: 0.9rem;
   text-align: left;
   border-left: 4px solid var(--revieu-improvements-color);
+}
+
+.revieu-lottie-container {
+  width: 120px;
 }

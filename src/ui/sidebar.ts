@@ -28,6 +28,7 @@
 import type { Adapter } from '../types'
 import { analyze, TooLargeError } from '../core/analyzer'
 import { marked } from 'marked'
+import lottie from 'lottie-web'
 
 // ID degli elementi DOM della sidebar — usati per i querySelector
 const SIDEBAR_ID = 'revieu-sidebar'
@@ -103,27 +104,20 @@ export const createSidebar = (): HTMLElement => {
   </div>
   <div class="revieu-body">
     <div class="revieu-output">
-    <div class="revieu-empty-state">
-
-  <h3 class="revieu-empty-title">Ready for a Code Review?</h3>
-  <p class="revieu-empty-description">
-    Click <strong>Analyze PR</strong> above to start.<br>
-    Get instant feedback on quality, security, and improvements.
-  </p>
-
-  <div class="revieu-empty-tips">
-    <div class="revieu-tip"> <strong>Strict</strong> tone = more critical feedback</div>
-    <div class="revieu-tip"> <strong>Security-focused</strong> for important PRs</div>
-  </div>
-</div>
+      <div class="revieu-empty-state">
+        <div class="revieu-lottie-container"></div>
+        <h3 class="revieu-empty-title">Ready for a Code Review?</h3>
+      </div>
     </div>
-    <div class="revieu-btn-row">
-      <button class="revieu-analyze-btn" disabled>${PR_ICON} Analyze PR</button>
-      <button class="revieu-clear-btn" title="Clear output">${TRASH_ICON}</button>
-    </div>
-    <div class="revieu-footer revieu-hidden-el">
-      <button class="revieu-copy-btn">Copy review</button>
-      <span class="revieu-token-hint"></span>
+    <div class="revieu-bottom-bar">
+      <div class="revieu-btn-row">
+        <button class="revieu-analyze-btn" disabled>${PR_ICON} Analyze PR</button>
+        <button class="revieu-clear-btn" title="Clear output">${TRASH_ICON}</button>
+      </div>
+      <div class="revieu-footer revieu-hidden-el">
+        <button class="revieu-copy-btn">Copy review</button>
+        <span class="revieu-token-hint"></span>
+      </div>
     </div>
   </div>
 `
@@ -201,6 +195,18 @@ export const createSidebar = (): HTMLElement => {
     hideFooter()
     hideClearButton()
   })
+
+  // Inizializza animazione Lottie nell'empty state
+  const lottieContainer = sidebar.querySelector('.revieu-lottie-container') as HTMLElement
+  if (lottieContainer) {
+    lottie.loadAnimation({
+      container: lottieContainer,
+      renderer: 'svg',
+      loop: true,
+      autoplay: true,
+      path: chrome.runtime.getURL('assets/ai.json'),
+    })
+  }
 
   // Parte chiusa di default
   sidebar.classList.add('revieu-hidden')
@@ -386,6 +392,9 @@ export const wireAnalyzer = (adapter: Adapter): void => {
         const message = err instanceof Error ? err.message : 'An unexpected error occurred.'
         output.innerHTML = `<p class="revieu-error">${message}</p>`
         showClearButton()
+      } finally {
+        btn.disabled = false
+        btn.innerHTML = `${PR_ICON} Analyze PR`
       }
     })
   })

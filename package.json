@@ -18,6 +18,7 @@
     "vitest": "^3.1.0"
   },
   "dependencies": {
+    "lottie-web": "^5.13.0",
     "marked": "^17.0.5"
   }
 }
