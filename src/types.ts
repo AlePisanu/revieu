@@ -1,91 +1,91 @@
 /**
- * types.ts — Contratti condivisi tra tutti i moduli dell'estensione.
+ * types.ts — Shared contracts between all extension modules.
  *
  * Pattern: DEPENDENCY INVERSION
- * Nessun modulo importa un'implementazione concreta (es. GitHubAdapter).
- * Tutti dipendono da queste interfacce. Questo permette di:
- * - Aggiungere nuovi adapter (es. GitLab) senza toccare analyzer/prompt/sidebar
- * - Testare ogni modulo in isolamento con mock che implementano l'interfaccia
+ * No module imports a concrete implementation (e.g. GitHubAdapter).
+ * All depend on these interfaces. This allows:
+ * - Adding new adapters (e.g. GitLab) without touching analyzer/prompt/sidebar
+ * - Testing each module in isolation with mocks implementing the interface
  *
- * Il flusso dei dati segue questa pipeline:
+ * Data flow follows this pipeline:
  *   Adapter.extractDiff() → RawDiff[] → parser.parseDiff() → DiffFile[] → prompt → AI
  */
 
 // ---------------------------------------------------------------------------
-// DATA: strutture dati che viaggiano nella pipeline
+// DATA: structures that travel through the pipeline
 // ---------------------------------------------------------------------------
 
 /**
- * RawDiff — dati grezzi estratti dall'adapter (es. dal .diff di GitHub).
- * Non ha ancora informazioni derivate come il linguaggio.
- * È il formato "intermedio" tra la sorgente (GitHub) e il nostro parser.
+ * RawDiff — raw data extracted by the adapter (e.g. from GitHub's .diff).
+ * Does not yet have derived information like the language.
+ * This is the "intermediate" format between the source (GitHub) and our parser.
  */
 export interface RawDiff {
-  /** Percorso del file nella repo (es. "src/core/parser.ts") */
+  /** File path in the repo (e.g. "src/core/parser.ts") */
   path: string
 
-  /** Righe aggiunte (quelle con "+" nel diff) */
+  /** Added lines (those with "+" in the diff) */
   additions: string[]
 
-  /** Righe rimosse (quelle con "-" nel diff) */
+  /** Removed lines (those with "-" in the diff) */
   deletions: string[]
 
   /**
-   * Righe di contesto — codice NON modificato che circonda le modifiche.
-   * GitHub include ~3 righe prima e dopo ogni hunk nel diff unificato.
-   * Servono all'AI per capire cosa c'è attorno al codice cambiato
-   * e ridurre i falsi positivi nella review.
+   * Context lines — unchanged code surrounding the modifications.
+   * GitHub includes ~3 lines before and after each hunk in the unified diff.
+   * These help the AI understand what's around the changed code
+   * and reduce false positives in the review.
    */
   context: string[]
 
   /**
-   * Contenuto completo del file (opzionale).
-   * Popolato solo in mode "full" quando si fa fetch del file intero via API.
+   * Full file content (optional).
+   * Only populated in "full" mode when fetching the entire file via API.
    */
   fullContent?: string
 
-  rawLines: string[] 
+  rawLines: string[]
 }
 
 /**
- * DiffFile — versione "arricchita" di RawDiff, pronta per costruire il prompt.
- * Il parser aggiunge informazioni derivate come il linguaggio e il conteggio righe.
+ * DiffFile — "enriched" version of RawDiff, ready for prompt building.
+ * The parser adds derived information like language and line counts.
  */
 export interface DiffFile {
   path: string
-  /** Linguaggio rilevato dall'estensione del file (es. "TypeScript", "Python") */
+  /** Language detected from the file extension (e.g. "TypeScript", "Python") */
   language: string
   additions: string[]
   deletions: string[]
   context: string[]
-  /** Contenuto completo del file, null se non disponibile */
+  /** Full file content, null if not available */
   fullContent: string | null
-  /** Numero di righe del file completo, null se fullContent non è disponibile */
+  /** Line count of the full file, null if fullContent is not available */
   fullLineCount: number | null
-  /** Somma di additions + deletions — usato per stimare la dimensione del diff */
+  /** Sum of additions + deletions — used to estimate diff size */
   totalLines: number
   rawLines: string[]
 }
 
 // ---------------------------------------------------------------------------
-// PROVIDER: interfaccia per i servizi AI (Claude, Gemini, ecc.)
+// PROVIDER: interface for AI services (Claude, Gemini, etc.)
 // ---------------------------------------------------------------------------
 
 /**
- * Provider — contratto che ogni servizio AI deve implementare.
+ * Provider — contract that every AI service must implement.
  *
  * Pattern: STRATEGY
- * L'analyzer non sa se sta parlando con Claude o Gemini.
- * Chiama solo `stream()` e riceve i chunk di testo via callback.
- * Per aggiungere un nuovo provider (es. OpenAI) basta creare una nuova
- * classe che implementa questa interfaccia.
+ * The analyzer doesn't know if it's talking to Claude or Gemini.
+ * It only calls `stream()` and receives text chunks via callback.
+ * To add a new provider (e.g. OpenAI) just create a new class
+ * implementing this interface.
  */
 export interface Provider {
   /**
-   * Invia il prompt all'AI e streama la risposta chunk per chunk.
-   * @param systemPrompt - istruzioni di sistema (tono, formato output)
-   * @param userMessage - il messaggio con il diff e il contesto della PR
-   * @param onChunk - callback chiamata per ogni pezzo di testo ricevuto
+   * Sends the prompt to the AI and streams the response chunk by chunk.
+   * @param systemPrompt - system instructions (tone, output format)
+   * @param userMessage - message with the diff and PR context
+   * @param onChunk - callback called for each piece of text received
    */
   stream(
     systemPrompt: string,
@@ -95,32 +95,32 @@ export interface Provider {
 }
 
 // ---------------------------------------------------------------------------
-// ADAPTER: interfaccia per le piattaforme (GitHub, GitLab, ecc.)
+// ADAPTER: interface for platforms (GitHub, GitLab, etc.)
 // ---------------------------------------------------------------------------
 
 /**
- * Adapter — contratto che ogni piattaforma deve implementare.
+ * Adapter — contract that every platform must implement.
  *
- * Pattern: ADAPTER (da qui il nome)
- * Traduce i dettagli specifici di una piattaforma (GitHub DOM, API, ecc.)
- * in un formato standard che il resto dell'app capisce (RawDiff[]).
- * Per supportare GitLab basterebbe creare un GitLabAdapter che implementa
- * questa interfaccia — tutto il resto del codice resta uguale.
+ * Pattern: ADAPTER (hence the name)
+ * Translates platform-specific details (GitHub DOM, API, etc.)
+ * into a standard format the rest of the app understands (RawDiff[]).
+ * To support GitLab, just create a GitLabAdapter implementing
+ * this interface — all other code stays the same.
  */
 export interface Adapter {
-  /** Controlla se l'URL corrente è una PR su questa piattaforma */
+  /** Checks if the current URL is a PR on this platform */
   isMatch(url: string): boolean
 
-  /** Estrae titolo e descrizione della PR dalla pagina */
+  /** Extracts the PR title and description from the page */
   extractContext(): { title: string; description: string }
 
-  /** Estrae i diff di tutti i file modificati nella PR */
+  /** Extracts diffs of all modified files in the PR */
   extractDiff(): Promise<RawDiff[]>
 
   /**
-   * Scarica il contenuto completo di un file dalla PR.
-   * Usato in mode "full" per dare all'AI il contesto dell'intero file.
-   * @returns content: il testo del file, source: da dove è stato scaricato
+   * Downloads the full content of a file from the PR.
+   * Used in "full" mode to give the AI the entire file context.
+   * @returns content: the file text, source: where it was downloaded from
    */
   fetchFullFile(path: string): Promise<{
     content: string | null

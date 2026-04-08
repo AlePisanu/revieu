@@ -18,6 +18,7 @@ const copyStaticFiles = () => {
     { from: 'popup/popup.html', to: 'popup/popup.html' },
     { from: 'src/ui/sidebar.css', to: 'src/ui/sidebar.css' },
     { from: 'icons/', to: 'icons/' },
+    { from: 'assets/', to: 'assets/' },
   ]
 
   for (const file of staticFiles) {

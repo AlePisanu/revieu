@@ -1,26 +1,26 @@
 /**
- * anthropic.ts — Provider per Claude (API Anthropic).
+ * anthropic.ts — Provider for Claude (Anthropic API).
  *
- * Implementa l'interfaccia Provider per comunicare con l'API di Anthropic.
- * Usa lo streaming SSE (Server-Sent Events) per ricevere la risposta
- * pezzo per pezzo e mostrarla in tempo reale nella sidebar.
+ * Implements the Provider interface to communicate with the Anthropic API.
+ * Uses SSE (Server-Sent Events) streaming to receive the response
+ * piece by piece and display it in real time in the sidebar.
  *
  * Pattern: STRATEGY
- * L'analyzer non sa quale provider sta usando — chiama solo stream().
- * Questo file è intercambiabile con gemini.ts o qualsiasi altro provider.
+ * The analyzer doesn't know which provider it's using — it only calls stream().
+ * This file is interchangeable with gemini.ts or any other provider.
  *
- * Nota sull'header "anthropic-dangerous-direct-browser-access":
- * L'API Anthropic normalmente blocca le chiamate dirette dal browser
- * (per sicurezza — la API key sarebbe esposta nel client).
- * Questo header dice all'API "so cosa sto facendo".
- * In un'estensione Chrome il rischio è mitigato perché la API key
- * è nello storage dell'estensione, non nel codice sorgente della pagina.
+ * Note on the "anthropic-dangerous-direct-browser-access" header:
+ * The Anthropic API normally blocks direct browser calls
+ * (for security — the API key would be exposed in the client).
+ * This header tells the API "I know what I'm doing".
+ * In a Chrome extension the risk is mitigated because the API key
+ * is in the extension's storage, not in the page source code.
  */
 
 import type { Provider } from '../types'
 
 const API_URL = 'https://api.anthropic.com/v1/messages'
-const MODEL = 'claude-haiku-4-5-20241022'
+const MODEL = 'claude-haiku-4-5'
 const MAX_TOKENS = 4096
 
 export class AnthropicProvider implements Provider {
@@ -31,13 +31,13 @@ export class AnthropicProvider implements Provider {
   }
 
   /**
-   * Invia il prompt a Claude e streama la risposta.
+   * Sends the prompt to Claude and streams the response.
    *
-   * Flusso:
-   * 1. Manda una POST con stream: true all'API Messages
-   * 2. L'API risponde con un flusso SSE (ogni riga inizia con "data: ")
-   * 3. Parsiamo ogni evento JSON e estraiamo il testo dai content_block_delta
-   * 4. Chiamiamo onChunk per ogni pezzo di testo ricevuto
+   * Flow:
+   * 1. Sends a POST with stream: true to the Messages API
+   * 2. The API responds with an SSE stream (each line starts with "data: ")
+   * 3. We parse each JSON event and extract text from content_block_delta
+   * 4. We call onChunk for each piece of text received
    */
   async stream(
     systemPrompt: string,
@@ -61,7 +61,7 @@ export class AnthropicProvider implements Provider {
       }),
     })
 
-    // Gestione errori HTTP con messaggi utili per l'utente
+    // HTTP error handling with user-friendly messages
     if (!response.ok) {
       const status = response.status
       if (status === 401) throw new Error('Invalid API key. Check your Anthropic key in settings.')
@@ -76,7 +76,7 @@ export class AnthropicProvider implements Provider {
       throw new Error(`Anthropic API error (${status}): ${detail}`)
     }
 
-    // --- Parsing dello stream SSE ---
+    // --- SSE stream parsing ---
     const reader = response.body?.getReader()
     if (!reader) throw new Error('No response stream available')
 
@@ -87,16 +87,16 @@ export class AnthropicProvider implements Provider {
       const { done, value } = await reader.read()
       if (done) break
 
-      // Accumula i byte nel buffer (stream: true nel decoder gestisce i chunk parziali)
+      // Accumulate bytes in the buffer (stream: true in decoder handles partial chunks)
       buffer += decoder.decode(value, { stream: true })
 
-      // Ogni riga SSE è separata da \n — splittiamo e processiamo
-      // L'ultima riga potrebbe essere incompleta → la teniamo nel buffer
+      // Each SSE line is separated by \n — split and process
+      // The last line might be incomplete → keep it in the buffer
       const lines = buffer.split('\n')
       buffer = lines.pop() ?? ''
 
       for (const line of lines) {
-        // Le righe SSE con dati iniziano con "data: "
+        // SSE data lines start with "data: "
         if (!line.startsWith('data: ')) continue
 
         const data = line.slice(6)
@@ -105,13 +105,13 @@ export class AnthropicProvider implements Provider {
         try {
           const event = JSON.parse(data)
 
-          // L'evento "content_block_delta" contiene il testo generato
-          // event.delta.text è il pezzo di risposta da mostrare
+          // The "content_block_delta" event contains the generated text
+          // event.delta.text is the response piece to display
           if (event.type === 'content_block_delta' && event.delta?.text) {
             onChunk(event.delta.text)
           }
         } catch {
-          // Righe JSON malformate — le ignoriamo (possono essere eventi di ping)
+          // Malformed JSON lines — ignore (could be ping events)
         }
       }
     }

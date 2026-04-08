@@ -23,6 +23,13 @@ describe('parseUnifiedDiff', () => {
         path: 'src/example.ts',
         additions: ['const oldValue = true', 'export const active = oldValue'],
         deletions: ['const oldValue = false'],
+        context: ['console.log(oldValue)'],
+        rawLines: [
+          '-const oldValue = false',
+          '+const oldValue = true',
+          '+export const active = oldValue',
+          ' console.log(oldValue)',
+        ],
       },
     ])
   })
@@ -50,6 +57,8 @@ describe('parseUnifiedDiff', () => {
         path: 'src/new.ts',
         additions: ['export const created = true'],
         deletions: [],
+        context: [],
+        rawLines: ['+export const created = true'],
       },
     ])
   })

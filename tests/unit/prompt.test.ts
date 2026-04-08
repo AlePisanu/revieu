@@ -7,6 +7,8 @@ const makeFile = (overrides: Partial<DiffFile>): DiffFile => ({
   language: 'TypeScript',
   additions: [],
   deletions: [],
+  context: [],
+  rawLines: [],
   fullContent: null,
   fullLineCount: null,
   totalLines: 0,
@@ -14,19 +16,22 @@ const makeFile = (overrides: Partial<DiffFile>): DiffFile => ({
 })
 
 describe('buildUserMessage', () => {
-  it('excludes files without extracted changes in diff mode', () => {
+  it('includes diff lines from rawLines in diff mode', () => {
     const message = buildUserMessage(
       { title: 'Test PR', description: '' },
       [
-        makeFile({ path: 'empty.ts' }),
-        makeFile({ path: 'real.ts', additions: ['const active = true'], totalLines: 1 }),
+        makeFile({
+          path: 'real.ts',
+          additions: ['const active = true'],
+          rawLines: ['+const active = true'],
+          totalLines: 1,
+        }),
       ],
       'diff'
     )
 
     expect(message).toContain('### real.ts (TypeScript)')
-    expect(message).toContain('+ const active = true')
-    expect(message).not.toContain('### empty.ts (TypeScript)')
+    expect(message).toContain('+const active = true')
   })
 
   it('keeps full files in full mode even when the diff arrays are empty', () => {

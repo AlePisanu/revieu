@@ -1,17 +1,17 @@
 /**
- * gemini.ts — Provider per Gemini (API Google).
+ * gemini.ts — Provider for Gemini (Google API).
  *
- * Implementa l'interfaccia Provider per comunicare con l'API Gemini.
- * Usa l'endpoint streamGenerateContent con SSE (alt=sse) per lo streaming.
+ * Implements the Provider interface to communicate with the Gemini API.
+ * Uses the streamGenerateContent endpoint with SSE (alt=sse) for streaming.
  *
- * Differenze rispetto al provider Anthropic:
- * - Ha un sistema di rate limiting client-side (MIN_REQUEST_INTERVAL_MS)
- *   perché il tier gratuito di Gemini ha limiti molto bassi
- * - Retry automatico su errori 429 (rate limit) con backoff lineare
- * - Il system prompt va nel campo `systemInstruction` (non nel messaggio utente)
- * - Il formato degli eventi SSE è diverso (candidates[0].content.parts[0].text)
+ * Differences from the Anthropic provider:
+ * - Has client-side rate limiting (MIN_REQUEST_INTERVAL_MS)
+ *   because Gemini's free tier has very low limits
+ * - Automatic retry on 429 errors (rate limit) with linear backoff
+ * - The system prompt goes in the `systemInstruction` field (not in the user message)
+ * - The SSE event format is different (candidates[0].content.parts[0].text)
  *
- * Pattern: STRATEGY (stesso di anthropic.ts)
+ * Pattern: STRATEGY (same as anthropic.ts)
  */
 
 import type { Provider } from '../types'
@@ -19,44 +19,44 @@ import type { Provider } from '../types'
 const MODEL = 'gemini-2.5-flash-lite'
 // const MODEL = 'gemini-2.5-flash'
 
-// --- Rate limiting client-side ---
-// Il tier gratuito di Gemini ha limiti stretti (es. 15 richieste/minuto).
-// Queste costanti gestiscono il throttling e i retry lato client
-// per evitare di bombardare l'API e ricevere 429 continui.
+// --- Client-side rate limiting ---
+// Gemini's free tier has tight limits (e.g. 15 requests/minute).
+// These constants manage client-side throttling and retries
+// to avoid bombarding the API and receiving continuous 429s.
 
-/** Intervallo minimo tra due richieste consecutive (10 secondi) */
+/** Minimum interval between two consecutive requests (10 seconds) */
 const MIN_REQUEST_INTERVAL_MS = 10000
-/** Numero massimo di retry automatici su errore 429 */
+/** Maximum number of automatic retries on 429 error */
 const MAX_RETRIES = 4
-/** Delay base tra un retry e l'altro (cresce linearmente: 15s, 30s, 45s, 60s) */
+/** Base delay between retries (grows linearly: 15s, 30s, 45s, 60s) */
 const BASE_RETRY_DELAY_MS = 15000
-/** Delay massimo tra retry (cap a 60 secondi) */
+/** Maximum delay between retries (capped at 60 seconds) */
 const MAX_RETRY_DELAY_MS = 60000
 
-/** Timestamp dell'ultima richiesta — usato per il throttling */
+/** Timestamp of the last request — used for throttling */
 let lastRequestAt = 0
 
-/** Sleep asincrono — non fa nulla se ms <= 0 */
+/** Async sleep — does nothing if ms <= 0 */
 const sleep = async (ms: number): Promise<void> => {
   if (ms <= 0) return
   await new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 /**
- * Calcola quanto aspettare prima del prossimo retry.
- * Prima controlla l'header `retry-after` dalla risposta del server.
- * Se non c'è, usa un backoff lineare (base * (attempt + 1)).
+ * Calculates how long to wait before the next retry.
+ * First checks the `retry-after` header from the server response.
+ * If absent, uses linear backoff (base * (attempt + 1)).
  */
 const getRetryDelayMs = (response: Response, attempt: number): number => {
   const retryAfter = response.headers.get('retry-after')
   const retrySeconds = retryAfter ? Number.parseFloat(retryAfter) : Number.NaN
 
-  // Se il server ci dice quanto aspettare, usiamo quello
+  // If the server tells us how long to wait, use that
   if (Number.isFinite(retrySeconds) && retrySeconds > 0) {
     return retrySeconds * 1000
   }
 
-  // Altrimenti backoff lineare con cap a MAX_RETRY_DELAY_MS
+  // Otherwise linear backoff capped at MAX_RETRY_DELAY_MS
   return Math.min(MAX_RETRY_DELAY_MS, BASE_RETRY_DELAY_MS * (attempt + 1))
 }
 
@@ -68,27 +68,27 @@ export class GeminiProvider implements Provider {
   }
 
   /**
-   * Invia il prompt a Gemini e streama la risposta.
+   * Sends the prompt to Gemini and streams the response.
    *
-   * Flusso:
-   * 1. Costruisce la URL con il modello e la API key (l'autenticazione è via query param)
-   * 2. Aspetta che sia passato MIN_REQUEST_INTERVAL_MS dall'ultima richiesta
-   * 3. Manda la POST — se riceve 429, riprova fino a MAX_RETRIES volte
-   * 4. Parsa lo stream SSE ed estrae il testo dai candidates
+   * Flow:
+   * 1. Builds the URL with the model and API key (auth is via query param)
+   * 2. Waits until MIN_REQUEST_INTERVAL_MS has passed since the last request
+   * 3. Sends the POST — if it gets 429, retries up to MAX_RETRIES times
+   * 4. Parses the SSE stream and extracts text from candidates
    *
-   * L'endpoint `streamGenerateContent?alt=sse` ritorna eventi SSE come:
-   * data: {"candidates":[{"content":{"parts":[{"text":"chunk di testo"}]}}]}
+   * The `streamGenerateContent?alt=sse` endpoint returns SSE events like:
+   * data: {"candidates":[{"content":{"parts":[{"text":"text chunk"}]}}]}
    */
   async stream(
     systemPrompt: string,
     userMessage: string,
     onChunk: (text: string) => void
   ): Promise<void> {
-    // L'API key va nella query string (non nell'header, a differenza di Anthropic)
+    // The API key goes in the query string (not in the header, unlike Anthropic)
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:streamGenerateContent?alt=sse&key=${this.apiKey}`
 
-    // systemInstruction è il campo dedicato di Gemini per il system prompt —
-    // separato dal messaggio utente, dà risultati migliori rispetto a concatenarli.
+    // systemInstruction is Gemini's dedicated field for the system prompt —
+    // separate from the user message, gives better results than concatenating them.
     const payload = JSON.stringify({
       systemInstruction: {
         parts: [{ text: systemPrompt }],
@@ -103,10 +103,10 @@ export class GeminiProvider implements Provider {
 
     let response: Response | null = null
 
-    // --- Loop di retry con throttling ---
+    // --- Retry loop with throttling ---
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-      // Aspetta che sia passato abbastanza tempo dall'ultima richiesta.
-      // Se il calcolo è negativo, sleep non fa nulla.
+      // Wait until enough time has passed since the last request.
+      // If the calculation is negative, sleep does nothing.
       await sleep(lastRequestAt + MIN_REQUEST_INTERVAL_MS - Date.now())
 
       lastRequestAt = Date.now()
@@ -116,18 +116,18 @@ export class GeminiProvider implements Provider {
         body: payload,
       })
 
-      // Risposta ok → esci dal loop
+      // Response ok → exit the loop
       if (response.ok) break
-      // Errore diverso da rate limit → non ha senso riprovare
+      // Error other than rate limit → no point retrying
       if (response.status !== 429) break
 
-      // Ultimo tentativo fallito → errore con suggerimento di attesa
+      // Last attempt failed → error with wait suggestion
       if (attempt === MAX_RETRIES) {
         const delayMs = getRetryDelayMs(response, attempt)
         throw new Error(`Gemini rate limit exceeded after automatic retries. Wait about ${Math.ceil(delayMs / 1000)}s and try again.`)
       }
 
-      // Aspetta prima del prossimo tentativo
+      // Wait before the next attempt
       await sleep(getRetryDelayMs(response, attempt))
     }
 
@@ -135,7 +135,7 @@ export class GeminiProvider implements Provider {
       throw new Error('Gemini request failed before a response was received.')
     }
 
-    // Gestione errori HTTP
+    // HTTP error handling
     if (!response.ok) {
       const status = response.status
       if (status === 400) throw new Error('Invalid Gemini API key. Check your key in settings.')
@@ -149,7 +149,7 @@ export class GeminiProvider implements Provider {
       throw new Error(`Gemini API error (${status}): ${detail}`)
     }
 
-    // --- Parsing dello stream SSE (stesso pattern di anthropic.ts) ---
+    // --- SSE stream parsing (same pattern as anthropic.ts) ---
     const reader = response.body?.getReader()
     if (!reader) throw new Error('No response stream available')
 
@@ -173,12 +173,12 @@ export class GeminiProvider implements Provider {
 
         try {
           const event = JSON.parse(data)
-          // La struttura della risposta Gemini è:
+          // Gemini response structure:
           // { candidates: [{ content: { parts: [{ text: "..." }] } }] }
           const text = event?.candidates?.[0]?.content?.parts?.[0]?.text
           if (text) onChunk(text)
         } catch {
-          // Righe malformate — ignoriamo
+          // Malformed lines — ignore
         }
       }
     }

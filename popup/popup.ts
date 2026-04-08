@@ -1,18 +1,18 @@
 /**
- * popup.ts — Script del popup dell'estensione (click sull'icona nella toolbar).
+ * popup.ts — Extension popup script (click on the toolbar icon).
  *
- * Il popup è la finestra che appare quando l'utente clicca sull'icona
- * di Revieu nella barra degli strumenti di Chrome.
- * Serve per configurare le API key (Anthropic, Gemini) e il token GitHub.
+ * The popup is the window that appears when the user clicks the
+ * Revieu icon in Chrome's toolbar.
+ * It's used to configure API keys (Anthropic, Gemini) and the GitHub token.
  *
- * Flusso:
- * 1. All'apertura del popup, carica i settings dal background (GET_SETTINGS)
- * 2. Riempie i campi con i valori salvati
- * 3. Al click su "Save", manda i nuovi valori al background (SAVE_SETTINGS)
+ * Flow:
+ * 1. On popup open, loads settings from the background (GET_SETTINGS)
+ * 2. Fills the fields with saved values
+ * 3. On "Save" click, sends the new values to the background (SAVE_SETTINGS)
  *
- * I settings vengono salvati in chrome.storage.sync (sincronizzato tra dispositivi)
- * tramite il background script. Il popup non accede allo storage direttamente —
- * comunica solo via messaggi.
+ * Settings are saved in chrome.storage.sync (synced across devices)
+ * through the background script. The popup doesn't access storage directly —
+ * it only communicates via messages.
  */
 
 const anthropicInput = document.getElementById('anthropic-key') as HTMLInputElement
@@ -21,7 +21,7 @@ const githubInput = document.getElementById('github-token') as HTMLInputElement
 const saveBtn = document.getElementById('save-btn') as HTMLButtonElement
 const statusEl = document.getElementById('status') as HTMLElement
 
-// Carica i settings salvati quando il popup si apre
+// Load saved settings when the popup opens
 chrome.runtime.sendMessage({ type: 'GET_SETTINGS' }, (settings) => {
   if (!settings) return
   anthropicInput.value = settings.anthropicKey ?? ''
@@ -29,7 +29,7 @@ chrome.runtime.sendMessage({ type: 'GET_SETTINGS' }, (settings) => {
   githubInput.value = settings.githubToken ?? ''
 })
 
-// Salva tutti i settings al click su "Save"
+// Save all settings on "Save" click
 saveBtn.addEventListener('click', () => {
   const payload = {
     anthropicKey: anthropicInput.value.trim(),

@@ -1,21 +1,21 @@
 /**
- * analyzer.ts — Orchestratore principale della review.
+ * analyzer.ts — Main review orchestrator.
  *
- * Questo è il "direttore d'orchestra" che coordina tutti gli altri moduli.
- * Non contiene logica di business specifica — chiama gli altri moduli
- * nell'ordine giusto e gestisce i casi limite (diff troppo grande, nessun file, ecc.)
+ * This is the "conductor" that coordinates all other modules.
+ * It contains no specific business logic — it calls other modules
+ * in the right order and handles edge cases (diff too large, no files, etc.)
  *
- * Flusso completo (5 step):
- * 1. Estrai contesto (titolo/descrizione) e diff dalla pagina → adapter
- * 2. Arricchisci i diff (linguaggio, conteggi) → parser
- * 3. Controlla dimensione e filtra file → logica interna
- * 3b. Se mode "full", scarica i file completi → adapter.fetchFullFile
- * 4. Costruisci il prompt → prompt.ts
- * 5. Manda all'AI e streama la risposta → provider
+ * Full flow (5 steps):
+ * 1. Extract context (title/description) and diff from the page → adapter
+ * 2. Enrich the diffs (language, counts) → parser
+ * 3. Check size and filter files → internal logic
+ * 3b. If "full" mode, download complete files → adapter.fetchFullFile
+ * 4. Build the prompt → prompt.ts
+ * 5. Send to AI and stream the response → provider
  *
  * Pattern: FACADE
- * La sidebar chiama solo `analyze(options)` — non deve sapere nulla
- * di adapter, parser, prompt, provider. Tutta la complessità è qui dentro.
+ * The sidebar only calls `analyze(options)` — it doesn't need to know
+ * about adapter, parser, prompt, provider. All complexity is encapsulated here.
  */
 
 import type { Adapter, Provider, DiffFile } from '../types'
@@ -25,29 +25,29 @@ import { AnthropicProvider } from '../providers/anthropic'
 import { GeminiProvider } from '../providers/gemini'
 
 /**
- * Limite massimo di righe di diff processabili in una volta.
- * Se il diff supera questo limite, viene lanciato TooLargeError
- * e la sidebar mostra un selettore di file per far scegliere all'utente.
- * Questo evita di mandare prompt enormi all'AI (costoso e lento).
+ * Maximum number of diff lines processable at once.
+ * If the diff exceeds this limit, TooLargeError is thrown
+ * and the sidebar shows a file selector for the user to choose from.
+ * This prevents sending huge prompts to the AI (expensive and slow).
  */
 const MAX_DIFF_LINES = 300
 
-/** Opzioni passate dalla sidebar per avviare l'analisi */
+/** Options passed from the sidebar to start the analysis */
 export interface AnalyzeOptions {
-  adapter: Adapter           // quale piattaforma (GitHub)
-  mode: string               // "diff" o "full"
+  adapter: Adapter           // which platform (GitHub)
+  mode: string               // "diff" or "full"
   tone: string               // "balanced", "strict", "security"
-  provider: string           // "anthropic" o "gemini"
-  apiKey: string             // API key del provider scelto
-  onChunk: (text: string) => void  // callback per lo streaming della risposta
-  selectedFiles?: string[]   // file scelti dall'utente (se diff troppo grande)
-  initialFiles?: DiffFile[]  // file già parsati (riusati dal selettore file)
+  provider: string           // "anthropic" or "gemini"
+  apiKey: string             // API key for the selected provider
+  onChunk: (text: string) => void  // callback for response streaming
+  selectedFiles?: string[]   // files chosen by the user (if diff too large)
+  initialFiles?: DiffFile[]  // already-parsed files (reused from file selector)
 }
 
 /**
- * Errore speciale lanciato quando il diff è troppo grande.
- * Porta con sé la lista dei file così la sidebar può mostrare
- * il selettore senza dover ri-estrarre il diff.
+ * Special error thrown when the diff is too large.
+ * Carries the file list so the sidebar can show the selector
+ * without having to re-extract the diff.
  */
 export class TooLargeError extends Error {
   files: DiffFile[]
@@ -59,9 +59,9 @@ export class TooLargeError extends Error {
 }
 
 /**
- * Factory che crea il provider AI in base al nome.
- * Pattern: FACTORY — nasconde la creazione dell'oggetto concreto.
- * Per aggiungere un provider (es. OpenAI) basta aggiungere un `if` qui.
+ * Factory that creates the AI provider by name.
+ * Pattern: FACTORY — hides the concrete object creation.
+ * To add a provider (e.g. OpenAI) just add an `if` here.
  */
 const createProvider = (provider: string, apiKey: string): Provider => {
   if (provider === 'anthropic') return new AnthropicProvider(apiKey)
@@ -70,18 +70,18 @@ const createProvider = (provider: string, apiKey: string): Provider => {
 }
 
 /**
- * Funzione principale — esegue l'intera pipeline di review.
- * Chiamata dalla sidebar quando l'utente clicca "Analyze PR".
+ * Main function — executes the entire review pipeline.
+ * Called by the sidebar when the user clicks "Analyze PR".
  */
 export const analyze = async (options: AnalyzeOptions): Promise<void> => {
   const { adapter, mode, tone, provider, apiKey, onChunk, selectedFiles, initialFiles } = options
 
-  // --- Step 1: Estrai contesto e diff dalla pagina ---
-  // extractContext prende titolo/descrizione dal DOM della PR
+  // --- Step 1: Extract context and diff from the page ---
+  // extractContext gets title/description from the PR DOM
   const context = adapter.extractContext()
 
-  // Se abbiamo già i file (ripassati dal selettore file), li riusiamo.
-  // Altrimenti estraiamo il diff da zero.
+  // If we already have files (passed from the file selector), reuse them.
+  // Otherwise extract the diff from scratch.
   let files = initialFiles
 
   if (!files) {
@@ -91,29 +91,29 @@ export const analyze = async (options: AnalyzeOptions): Promise<void> => {
       throw new Error('No code changes found in this PR.')
     }
 
-    // --- Step 2: Arricchisci i diff con linguaggio e conteggi ---
+    // --- Step 2: Enrich diffs with language and counts ---
     files = parseDiff(rawDiffs)
   }
 
-  // --- Step 3: Controlla dimensione ---
-  // Se il diff totale supera MAX_DIFF_LINES, lancia TooLargeError.
-  // La sidebar lo catcha e mostra il selettore file.
-  // Se selectedFiles è presente, l'utente ha già scelto → salta il check.
+  // --- Step 3: Check size ---
+  // If total diff exceeds MAX_DIFF_LINES, throw TooLargeError.
+  // The sidebar catches it and shows the file selector.
+  // If selectedFiles is present, the user already chose → skip check.
   const totalLines = files.reduce((sum, f) => sum + f.totalLines, 0)
 
   if (totalLines > MAX_DIFF_LINES && !selectedFiles) {
     throw new TooLargeError(files)
   }
 
-  // Filtra ai soli file scelti dall'utente (se ha usato il selettore)
+  // Filter to only files chosen by the user (if they used the selector)
   if (selectedFiles) {
     files = files.filter((f) => selectedFiles.includes(f.path))
   }
 
-  // --- Step 3b: Scarica file completi (solo in mode "full") ---
-  // Per ogni file nel diff, chiama fetchFullFile in parallelo.
-  // Se un file fallisce il fetch (es. repo privata senza token),
-  // viene analizzato comunque con il solo diff.
+  // --- Step 3b: Download complete files (only in "full" mode) ---
+  // For each file in the diff, call fetchFullFile in parallel.
+  // If a file fails to fetch (e.g. private repo without token),
+  // it's still analyzed with just the diff.
   if (mode === 'full') {
     await Promise.all(
       files.map(async (file) => {
@@ -126,7 +126,7 @@ export const analyze = async (options: AnalyzeOptions): Promise<void> => {
     )
   }
 
-  // Filtra i file che hanno effettivamente qualcosa da analizzare
+  // Filter files that actually have something to analyze
   const filesWithChanges = files.filter((file) => {
     return file.additions.length > 0 || file.deletions.length > 0 || (mode === 'full' && file.fullContent)
   })
@@ -138,13 +138,13 @@ export const analyze = async (options: AnalyzeOptions): Promise<void> => {
     throw new Error('Could not extract changed lines from the GitHub diff. Reload the PR page and make sure the Files changed tab is visible.')
   }
 
-  // --- Step 4: Costruisci il prompt ---
+  // --- Step 4: Build the prompt ---
   const systemPrompt = buildSystemPrompt(tone)
   const userMessage = buildUserMessage(context, filesWithChanges, mode)
 
-  // --- Step 5: Manda all'AI e streama la risposta ---
-  // onChunk viene chiamata per ogni pezzo di testo ricevuto,
-  // la sidebar lo renderizza in tempo reale come markdown.
+  // --- Step 5: Send to AI and stream the response ---
+  // onChunk is called for each piece of text received,
+  // the sidebar renders it in real time as markdown.
   const ai = createProvider(provider, apiKey)
   await ai.stream(systemPrompt, userMessage, onChunk)
 }

@@ -1,37 +1,37 @@
 /**
- * background.ts — Service worker dell'estensione (Manifest V3).
+ * background.ts — Extension service worker (Manifest V3).
  *
- * Gira in un contesto isolato dal DOM della pagina. Non può accedere
- * a document, window, ecc. — può solo:
- * - Ricevere messaggi da popup e content script via chrome.runtime.onMessage
- * - Fare fetch HTTP senza restrizioni CORS (il background ha permessi speciali)
- * - Leggere/scrivere chrome.storage
+ * Runs in an isolated context from the page DOM. Cannot access
+ * document, window, etc. — it can only:
+ * - Receive messages from popup and content script via chrome.runtime.onMessage
+ * - Make HTTP fetches without CORS restrictions (background has special permissions)
+ * - Read/write chrome.storage
  *
  * Pattern: MESSAGE BUS
- * Il background fa da "centralina" tra le parti dell'estensione.
- * Popup e content script mandano messaggi tipizzati (Message),
- * il background li gestisce e risponde in modo asincrono.
+ * The background acts as a "hub" between extension parts.
+ * Popup and content script send typed messages (Message),
+ * the background handles them and responds asynchronously.
  *
- * Perché le fetch passano da qui:
- * Il content script gira nella pagina di GitHub e ha le stesse restrizioni
- * CORS del browser. Il background invece può fare fetch a qualsiasi URL
- * (github.com/...diff, api.github.com, ecc.) senza essere bloccato.
+ * Why fetches go through here:
+ * The content script runs in the GitHub page and has the same
+ * browser CORS restrictions. The background can fetch any URL
+ * (github.com/...diff, api.github.com, etc.) without being blocked.
  */
 
 // ---------------------------------------------------------------------------
-// STORAGE: schema dei dati salvati in chrome.storage.sync
+// STORAGE: schema of data saved in chrome.storage.sync
 // ---------------------------------------------------------------------------
 
 /**
- * Struttura dei settings dell'estensione.
- * chrome.storage.sync li sincronizza tra i dispositivi dell'utente.
- * L'index signature [key: string] è richiesta da chrome.storage.sync.get()
- * che si aspetta un tipo compatibile con Record<string, unknown>.
+ * Extension settings structure.
+ * chrome.storage.sync syncs them across user's devices.
+ * The index signature [key: string] is required by chrome.storage.sync.get()
+ * which expects a type compatible with Record<string, unknown>.
  */
 interface StorageData {
   anthropicKey: string
   geminiKey: string
-  /** Token GitHub per accedere a repo private in mode "Full context" */
+  /** GitHub token for accessing private repos in "Full context" mode */
   githubToken: string
   provider: 'anthropic' | 'gemini'
   tone: 'balanced' | 'strict' | 'security'
@@ -39,7 +39,7 @@ interface StorageData {
   [key: string]: string
 }
 
-/** Valori di default usati quando l'utente non ha ancora configurato nulla */
+/** Default values used when the user hasn't configured anything yet */
 const DEFAULTS: StorageData = {
   anthropicKey: '',
   geminiKey: '',
@@ -50,14 +50,14 @@ const DEFAULTS: StorageData = {
 }
 
 // ---------------------------------------------------------------------------
-// MESSAGGI: tipi di messaggi che il background può ricevere
+// MESSAGES: message types the background can receive
 // ---------------------------------------------------------------------------
 
 /**
- * Union type di tutti i messaggi supportati.
- * Ogni tipo ha un campo `type` discriminante e un payload opzionale.
- * Questo pattern (discriminated union) permette a TypeScript di
- * restringere il tipo automaticamente dentro ogni `if`.
+ * Union type of all supported messages.
+ * Each type has a discriminant `type` field and an optional payload.
+ * This pattern (discriminated union) lets TypeScript narrow the type
+ * automatically inside each `if`.
  */
 type Message =
   | { type: 'GET_SETTINGS' }
@@ -66,38 +66,38 @@ type Message =
   | { type: 'FETCH_GITHUB_FILE'; payload: { url: string; token?: string } }
 
 // ---------------------------------------------------------------------------
-// HANDLER: gestisce i messaggi in arrivo da popup e content script
+// HANDLER: processes incoming messages from popup and content script
 // ---------------------------------------------------------------------------
 
 chrome.runtime.onMessage.addListener((message: Message, _sender, sendResponse) => {
 
-  // --- Legge i settings dallo storage e li ritorna al chiamante ---
+  // --- Read settings from storage and return them to the caller ---
   if (message.type === 'GET_SETTINGS') {
-    // Il secondo argomento di .get() sono i default: se un campo non esiste
-    // nello storage, viene riempito con il valore di DEFAULTS.
+    // The second argument to .get() are defaults: if a field doesn't exist
+    // in storage, it's filled with the value from DEFAULTS.
     chrome.storage.sync.get(DEFAULTS, (data) => {
       sendResponse(data as StorageData)
     })
-    // `return true` dice a Chrome di tenere aperto il canale del messaggio
-    // finché non chiamiamo sendResponse (che succede in modo asincrono).
-    // Senza questo, Chrome chiude il canale prima che lo storage risponda.
+    // `return true` tells Chrome to keep the message channel open
+    // until we call sendResponse (which happens asynchronously).
+    // Without this, Chrome closes the channel before storage responds.
     return true
   }
 
-  // --- Salva i settings nello storage ---
+  // --- Save settings to storage ---
   if (message.type === 'SAVE_SETTINGS') {
-    // Partial<StorageData> permette di salvare anche un solo campo
-    // senza dover passare tutti i settings ogni volta.
+    // Partial<StorageData> allows saving just one field
+    // without having to pass all settings every time.
     chrome.storage.sync.set(message.payload, () => {
       sendResponse({ success: true })
     })
     return true
   }
 
-  // --- Scarica il diff unificato di una PR (es. github.com/.../pull/42.diff) ---
-  // Usato dall'adapter per ottenere il diff in formato testo.
-  // credentials: 'include' manda i cookie dell'utente, così funziona
-  // anche se l'utente è loggato su GitHub con una sessione attiva.
+  // --- Download the unified diff of a PR (e.g. github.com/.../pull/42.diff) ---
+  // Used by the adapter to get the diff in text format.
+  // credentials: 'include' sends user cookies, so it works
+  // even if the user is logged into GitHub with an active session.
   if (message.type === 'FETCH_GITHUB_DIFF') {
     fetch(message.payload.url, {
       method: 'GET',
@@ -122,11 +122,11 @@ chrome.runtime.onMessage.addListener((message: Message, _sender, sendResponse) =
     return true
   }
 
-  // --- Scarica il contenuto completo di un file da GitHub ---
-  // Usato in mode "Full context" per dare all'AI l'intero file, non solo il diff.
-  // L'header Accept: application/vnd.github.v3.raw dice all'API di GitHub
-  // di ritornare il file grezzo (testo) invece del JSON con il base64.
-  // Il token Authorization è opzionale: serve solo per repo private.
+  // --- Download the full content of a file from GitHub ---
+  // Used in "Full context" mode to give the AI the entire file, not just the diff.
+  // The Accept: application/vnd.github.v3.raw header tells the GitHub API
+  // to return the raw file (text) instead of JSON with base64.
+  // The Authorization token is optional: only needed for private repos.
   if (message.type === 'FETCH_GITHUB_FILE') {
     const headers: Record<string, string> = { Accept: 'application/vnd.github.v3.raw' }
 
