@@ -91,14 +91,14 @@
 - [ ] Default model: `Qwen2.5-Coder-7B-Instruct` (~5.5GB VRAM)
 - [ ] Fallback: `Phi-3.5-mini-instruct` (~2.5GB VRAM) for limited hardware
 - [ ] Clear warning about local model limitations vs cloud
-- [ ] Requires WebGPU — clear message if not supported
+- [ ] Requires WebGPU: clear message if not supported
 
 ---
 
 ## Ideas for later
 
-- **Firefox support** — Manifest v3 is now supported, relatively clean port
-- **Custom prompt** — user writes their own system prompt
-- **Review history** — per-PR review history stored in `chrome.storage.local`
-- **Team prompts** — share prompt sets with the team via sync
-- **GitHub Actions integration** — trigger Revieu as a CI step, auto-comment on PRs
+- **Firefox support**: Manifest v3 is now supported, relatively clean port
+- **Custom prompt**: user writes their own system prompt
+- **Review history**: per-PR review history stored in `chrome.storage.local`
+- **Team prompts**: share prompt sets with the team via sync
+- **GitHub Actions integration**: trigger Revieu as a CI step, auto-comment on PRs

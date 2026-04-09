@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Revieu</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* ===== THEME TOKENS aligned with sidebar.css  ===== */
+    :root {
+      --popup-bg: #ffffff;
+      --popup-text: #111111;
+      --popup-text-secondary: #52525b;
+      --popup-text-muted: #71717a;
+      --popup-text-accent: #3b82f6;
+
+      --popup-input-bg: #ffffff;
+      --popup-input-border: #e4e4e7;
+      --popup-input-placeholder: #a1a1aa;
+      --popup-input-focus-border: #3b82f6;
+      --popup-input-focus-ring: rgba(59, 130, 246, 0.15);
+
+      --popup-btn-bg: #111111;
+      --popup-btn-text: #ffffff;
+      --popup-btn-hover: #27272a;
+
+      --popup-status-color: #22c55e;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --popup-bg: #111113;
+        --popup-text: #f4f4f5;
+        --popup-text-secondary: #a1a1aa;
+        --popup-text-muted: #71717a;
+        --popup-text-accent: #60a5fa;
+
+        --popup-input-bg: #18181b;
+        --popup-input-border: #3f3f46;
+        --popup-input-placeholder: #71717a;
+        --popup-input-focus-border: #60a5fa;
+        --popup-input-focus-ring: rgba(96, 165, 250, 0.25);
+
+        --popup-btn-bg: #f4f4f5;
+        --popup-btn-text: #09090b;
+        --popup-btn-hover: #e4e4e7;
+
+        --popup-status-color: #4ade80;
+      }
+    }
+
+    body {
+      width: 320px;
+      font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 14px;
+      color: var(--popup-text);
+      padding: 18px;
+      background: var(--popup-bg);
+    }
+
+    /* HEADER */
+    h1 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 18px;
+      letter-spacing: -0.2px;
+    }
+
+    /* FIELD */
+    .field {
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--popup-text-secondary);
+      margin-bottom: 6px;
+    }
+
+    /* INPUT */
+    input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--popup-input-border);
+      border-radius: 8px;
+      font-size: 13px;
+      color: var(--popup-text);
+      background: var(--popup-input-bg);
+      transition: all 0.15s ease;
+    }
+
+    input::placeholder {
+      color: var(--popup-input-placeholder);
+    }
+
+    input:hover {
+      border-color: var(--popup-input-focus-border);
+    }
+
+    input:focus {
+      outline: none;
+      border-color: var(--popup-input-focus-border);
+      box-shadow: 0 0 0 3px var(--popup-input-focus-ring);
+    }
+
+    /* HINT */
+    .hint {
+      font-size: 11px;
+      color: var(--popup-text-muted);
+      margin-top: 6px;
+      line-height: 1.4;
+    }
+
+    .hint a {
+      color: var(--popup-text-accent);
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .hint a:hover {
+      text-decoration: underline;
+    }
+
+    /* BUTTON */
+    button {
+      width: 100%;
+      padding: 11px;
+      margin-top: 10px;
+
+      background: var(--popup-btn-bg);
+      color: var(--popup-btn-text);
+
+      border: none;
+      border-radius: 8px;
+
+      font-size: 14px;
+      font-weight: 500;
+
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    button:hover {
+      background: var(--popup-btn-hover);
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    /* STATUS */
+    .status {
+      text-align: center;
+      font-size: 12px;
+      margin-top: 10px;
+      color: var(--popup-status-color);
+      min-height: 18px;
+    }
+
+    .logo-wrapper {
+      display: block;
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    .revieu-logo-popup {
+      width: 25px;
+      height: auto;
+    }
+
+    /* ONBOARDING */
+    .onboarding {
+      margin-bottom: 16px;
+      padding: 14px;
+      background: var(--popup-input-bg);
+      border: 1px solid var(--popup-input-border);
+      border-radius: 8px;
+    }
+
+    .onboarding-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--popup-text);
+      margin-bottom: 10px;
+    }
+
+    .onboarding-steps {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .onboarding-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--popup-text-secondary);
+      line-height: 1.4;
+    }
+
+    .step-number {
+      flex-shrink: 0;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--popup-btn-bg);
+      color: var(--popup-btn-text);
+      font-size: 10px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .onboarding.hidden {
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+  <picture class="logo-wrapper">
+    <source srcset="../icons/logo-white.png" media="(prefers-color-scheme: dark)">
+    <img src="../icons/logo-black.png" alt="Revieu" class="revieu-logo-popup">
+  </picture>
+  
+  <div class="onboarding hidden" id="onboarding">
+    <p class="onboarding-title">Get started</p>
+    <ol class="onboarding-steps">
+      <li class="onboarding-step">
+        <span class="step-number">1</span>
+        Add an API key below (Gemini is free)
+      </li>
+      <li class="onboarding-step">
+        <span class="step-number">2</span>
+        Open a Pull Request on GitHub
+      </li>
+      <li class="onboarding-step">
+        <span class="step-number">3</span>
+        Click the "R" bookmark on the right side of the GitHub page
+      </li>
+    </ol>
+  </div>
+
+  <div class="field">
+    <label for="gemini-key">Gemini API Key <span style="font-weight:400;color:var(--popup-text-muted)">(required - at least one of Gemini or Anthropic)</span></label>
+    <input type="password" id="gemini-key" placeholder="AI...">
+    <p class="hint">Free, no billing (with limits): create one here <a href="https://aistudio.google.com/app/apikey"
+        target="_blank" rel="noopener noreferrer">aistudio.google.com</a></p>
+  </div>
+
+  <div class="field">
+    <label for="anthropic-key">Anthropic API Key <span style="font-weight:400;color:var(--popup-text-muted)">(required - at least one of Gemini or Anthropic)</span></label>
+    <input type="password" id="anthropic-key" placeholder="sk-ant-...">
+    <p class="hint">Get one at <a href="https://console.anthropic.com/settings/keys"
+        target="_blank" rel="noopener noreferrer">console.anthropic.com</a> (no free plan for APIs)</p>
+  </div>
+
+  <div class="field">
+    <label for="github-token">GitHub Token <span style="font-weight:400;color:var(--popup-text-muted)">(optional)</span></label>
+    <input type="password" id="github-token" placeholder="ghp_...">
+    <p class="hint">
+      Required for private repositories in Full context mode.<br>
+      Make sure to check the <strong><code>repo</code></strong> checkbox 
+      ("Full control of private repositories").<br>
+      <a href="https://github.com/settings/tokens/new?scopes=repo" 
+        target="_blank" rel="noopener">
+        Create token here
+      </a>
+    </p>
+  </div>
+
+  <button id="save-btn">Save</button>
+  <p class="status" id="status"></p>
+
+  <script src="popup.js"></script>
+</body>
+
+</html>

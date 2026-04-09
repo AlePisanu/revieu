@@ -2,7 +2,7 @@
 
 ## Overview
 
-Revieu is a Chrome Extension (Manifest v3) that injects a sidebar into GitHub PR pages and performs AI-powered code review via the Anthropic or Gemini API. The architecture is split into four independent layers — adapters, providers, core, UI — so that adding a new platform (GitLab) or a new model (WebLLM) requires touching only one layer.
+Revieu is a Chrome Extension (Manifest v3) that injects a sidebar into GitHub PR pages and performs AI-powered code review via the Anthropic or Gemini API. The architecture is split into four independent layers adapters, providers, core, UI so that adding a new platform (GitLab) or a new model (WebLLM) requires touching only one layer.
 
 ---
 
@@ -11,12 +11,12 @@ Revieu is a Chrome Extension (Manifest v3) that injects a sidebar into GitHub PR
 ```
 revieu/
 ├── manifest.json
-├── build.js                  # esbuild config — watch + prod
+├── build.js                  # esbuild config watch + prod
 ├── package.json
 ├── tsconfig.json
 ├── src/
 │   ├── content.ts            # Entry point injected by Chrome into GitHub pages
-│   ├── background.ts         # Service worker — storage, messaging
+│   ├── background.ts         # Service worker storage, messaging
 │   ├── adapters/
 │   │   ├── github.ts         # Reads diff, context, full files from GitHub DOM
 │   │   └── gitlab.ts         # (v2) GitLab MR support
@@ -123,7 +123,7 @@ interface Adapter {
 
 ## Adapters
 
-Each adapter knows how to read a specific platform's DOM. The rest of the system only speaks `RawDiff[]` — it never cares which platform it's on.
+Each adapter knows how to read a specific platform's DOM. The rest of the system only speaks `RawDiff[]` it never cares which platform it's on.
 
 ### GitHub Adapter (v1)
 
@@ -139,7 +139,7 @@ GitHub renders the diff as HTML. Key selectors:
 
 ### Full file fetch strategy
 
-Three strategies in cascade — no GitHub token required for the common case:
+Three strategies in cascade no GitHub token required for the common case:
 
 ```
 Is the repo public?
@@ -168,18 +168,18 @@ Same interface, different selectors. Targets `/merge_requests/*` URLs.
 
 ### Anthropic (v1)
 
-Model: `claude-haiku-4-5` — cheapest Anthropic model, sufficient for code review. Uses SSE streaming. A typical PR review costs fractions of a cent.
+Model: `claude-haiku-4-5` cheapest Anthropic model, sufficient for code review. Uses SSE streaming. A typical PR review costs fractions of a cent.
 
 ### Gemini Flash (v1)
 
-Model: `gemini-2.0-flash` — genuinely free tier (15 RPM, no billing required). Uses streaming via the `streamGenerateContent` endpoint.
+Model: `gemini-2.0-flash` genuinely free tier (15 RPM, no billing required). Uses streaming via the `streamGenerateContent` endpoint.
 
 ### WebLLM (v3 roadmap)
 
 Runs a quantized model locally via WebGPU. No API key, no data leaves the browser.
 
-- Recommended: `Qwen2.5-Coder-7B-Instruct` (~5.5GB VRAM) — best quality for code tasks
-- Fallback: `Phi-3.5-mini-instruct` (~2.5GB VRAM) — works on integrated GPUs
+- Recommended: `Qwen2.5-Coder-7B-Instruct` (~5.5GB VRAM) best quality for code tasks
+- Fallback: `Phi-3.5-mini-instruct` (~2.5GB VRAM) works on integrated GPUs
 
 First load downloads and caches the model in the browser. A progress bar is shown. Subsequent uses are instant.
 
@@ -198,15 +198,15 @@ Use markdown. Be direct and concise. Max 600 words.
 ```
 
 Tone modifiers:
-- `balanced` — no addition
-- `strict` — "Be thorough. Flag even minor issues — naming, edge cases, missing null checks."
-- `security` — "Prioritize security above all. Look for injection risks, data exposure, auth issues, insecure defaults."
+- `balanced` no addition
+- `strict` "Be thorough. Flag even minor issues naming, edge cases, missing null checks."
+- `security` "Prioritize security above all. Look for injection risks, data exposure, auth issues, insecure defaults."
 
 ### User message structure
 
 ```
 ## PR: Fix race condition in auth token refresh
-**Description:** Resolves #412 — users were being logged out randomly...
+**Description:** Resolves #412 users were being logged out randomly...
 
 ## Dependency map
 - hooks/useAuth.ts imports from api/auth.ts
@@ -215,7 +215,7 @@ Tone modifiers:
 ## Changes
 
 ### src/api/auth.ts (TypeScript)
-**Full file:** [full content — if mode=full]
+**Full file:** [full content if mode=full]
 **Modified lines:**
 + added line
 - removed line
@@ -224,7 +224,7 @@ Tone modifiers:
 ...
 ```
 
-The dependency map costs almost nothing in tokens but gives the model structural information about which files call which — so it can reason about cross-file impact without guessing.
+The dependency map costs almost nothing in tokens but gives the model structural information about which files call which so it can reason about cross-file impact without guessing.
 
 ---
 
@@ -245,7 +245,7 @@ Only intra-PR dependencies are mapped — no need to analyze the entire codebase
 
 ## Large diff handling
 
-If total diff lines exceed 300, the analyzer throws `TOO_LARGE` and the sidebar shows a file selector. The user picks which files to analyze. This avoids silent context window truncation — the user always knows what's being analyzed.
+If total diff lines exceed 300, the analyzer throws `TOO_LARGE` and the sidebar shows a file selector. The user picks which files to analyze. This avoids silent context window truncation the user always knows what's being analyzed.
 
 ---
 
@@ -292,6 +292,44 @@ If total diff lines exceed 300, the analyzer throws `TOO_LARGE` and the sidebar 
 
 - API keys never leave the browser except in direct calls to provider APIs
 - In Diff only mode, only changed lines are sent to the model
-- In Full context mode (public repos), file content is fetched from `raw.githubusercontent.com` — GitHub's own CDN
+- In Full context mode (public repos), file content is fetched from `raw.githubusercontent.com` GitHub's own CDN
 - No eval(), no remote code execution, strict CSP enforced
 - GitHub token is optional, stored in `chrome.storage.sync`, used only for private repo full context
+
+
+  ┌───────────────┬───────────────────┬──────────────────────┐   
+  │     File      │       Ruolo       │       Pattern        │   
+  ├───────────────┼───────────────────┼──────────────────────┤   
+  │               │ Contratti         │ Dependency           │   
+  │ types.ts      │ condivisi         │ Inversion, Strategy, │   
+  │               │                   │  Adapter             │   
+  ├───────────────┼───────────────────┼──────────────────────┤   
+  │               │ Service worker,   │ Message Bus,         │   
+  │ background.ts │ centralina        │ Discriminated Union  │   
+  │               │ messaggi          │                      │   
+  ├───────────────┼───────────────────┼──────────────────────┤   
+  │ github.ts     │ Estrae dati da    │ Adapter (DOM + API)  │   
+  │               │ GitHub            │                      │   
+  ├───────────────┼───────────────────┼──────────────────────┤   
+  │ parser.ts     │ Arricchisce i     │ Pipeline step        │   
+  │               │ diff              │                      │   
+  ├───────────────┼───────────────────┼──────────────────────┤   
+  │ prompt.ts     │ Costruisce i      │ Template/Builder     │   
+  │               │ messaggi per l'AI │                      │   
+  ├───────────────┼───────────────────┼──────────────────────┤   
+  │ analyzer.ts   │ Orchestratore     │ Facade, Factory      │   
+  │               │ della review      │                      │   
+  ├───────────────┼───────────────────┼──────────────────────┤   
+  │ anthropic.ts  │ Provider Claude   │ Strategy             │   
+  ├───────────────┼───────────────────┼──────────────────────┤   
+  │ gemini.ts     │ Provider Gemini   │ Strategy +           │   
+  │               │                   │ retry/throttle       │   
+  ├───────────────┼───────────────────┼──────────────────────┤   
+  │ sidebar.ts    │ UI sidebar        │ Controller           │   
+  │               │ iniettata         │                      │   
+  ├───────────────┼───────────────────┼──────────────────────┤   
+  │ content.ts    │ Entry point       │ SPA observer         │   
+  │               │ content script    │                      │   
+  ├───────────────┼───────────────────┼──────────────────────┤   
+  │ popup.ts      │ Popup settings    │ Message-based I/O    │   
+  └───────────────┴───────────────────┴──────────────────────┘
