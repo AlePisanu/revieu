@@ -20,14 +20,55 @@
 import type { Provider } from '../types'
 
 const API_URL = 'https://api.anthropic.com/v1/messages'
-const MODEL = 'claude-haiku-4-5'
+export const DEFAULT_ANTHROPIC_MODEL = 'claude-haiku-4-5'
 const MAX_TOKENS = 4096
+
+/**
+ * Fetches available Claude models from the Anthropic API.
+ * Returns only chat models, sorted by display name.
+ * On failure, returns a static fallback list.
+ */
+export async function listAnthropicModels(
+  apiKey: string
+): Promise<{ id: string; name: string }[]> {
+  const FALLBACK: { id: string; name: string }[] = [
+    { id: 'claude-haiku-4-5', name: 'Claude Haiku 4.5' },
+    { id: 'claude-sonnet-4-5', name: 'Claude Sonnet 4.5' },
+    { id: 'claude-opus-4', name: 'Claude Opus 4' },
+  ]
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/models?limit=100', {
+      headers: {
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+    })
+    if (!res.ok) return FALLBACK
+
+    const data = await res.json()
+    const models: { id: string; name: string }[] = []
+
+    for (const m of data.data ?? []) {
+      const id: string = m.id ?? ''
+      if (!id) continue
+      models.push({ id, name: m.display_name ?? id })
+    }
+
+    return models.length > 0 ? models : FALLBACK
+  } catch {
+    return FALLBACK
+  }
+}
 
 export class AnthropicProvider implements Provider {
   private apiKey: string
+  private model: string
 
-  constructor(apiKey: string) {
+  constructor(apiKey: string, model?: string) {
     this.apiKey = apiKey
+    this.model = model || DEFAULT_ANTHROPIC_MODEL
   }
 
   /**
@@ -53,7 +94,7 @@ export class AnthropicProvider implements Provider {
         'anthropic-dangerous-direct-browser-access': 'true',
       },
       body: JSON.stringify({
-        model: MODEL,
+        model: this.model,
         max_tokens: MAX_TOKENS,
         stream: true,
         temperature: 0,

@@ -16,8 +16,46 @@
 
 import type { Provider } from '../types'
 
-const MODEL = 'gemini-2.5-flash-lite'
-// const MODEL = 'gemini-2.5-flash'
+export const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash-lite'
+
+/**
+ * Fetches available Gemini models from the API.
+ * Returns only models that support generateContent (text generation),
+ * sorted by displayName. On failure, returns a static fallback list.
+ */
+export async function listGeminiModels(
+  apiKey: string
+): Promise<{ id: string; name: string }[]> {
+  const FALLBACK: { id: string; name: string }[] = [
+    { id: 'gemini-2.5-flash-lite', name: 'Gemini 2.5 Flash Lite' },
+    { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash' },
+    { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro' },
+  ]
+
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`
+    )
+    if (!res.ok) return FALLBACK
+
+    const data = await res.json()
+    const models: { id: string; name: string }[] = []
+
+    for (const m of data.models ?? []) {
+      const methods: string[] = m.supportedGenerationMethods ?? []
+      if (!methods.includes('generateContent')) continue
+      // skip image/live/embedding-only models
+      const id: string = m.name?.replace('models/', '') ?? ''
+      if (!id || id.includes('image') || id.includes('live') || id.includes('embedding')) continue
+
+      models.push({ id, name: m.displayName ?? id })
+    }
+
+    return models.length > 0 ? models : FALLBACK
+  } catch {
+    return FALLBACK
+  }
+}
 
 // --- Client-side rate limiting ---
 // Gemini's free tier has tight limits (e.g. 15 requests/minute).
@@ -62,9 +100,11 @@ const getRetryDelayMs = (response: Response, attempt: number): number => {
 
 export class GeminiProvider implements Provider {
   private apiKey: string
+  private model: string
 
-  constructor(apiKey: string) {
+  constructor(apiKey: string, model?: string) {
     this.apiKey = apiKey
+    this.model = model || DEFAULT_GEMINI_MODEL
   }
 
   /**
@@ -85,7 +125,7 @@ export class GeminiProvider implements Provider {
     onChunk: (text: string) => void
   ): Promise<void> {
     // The API key goes in the query string (not in the header, unlike Anthropic)
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:streamGenerateContent?alt=sse&key=${this.apiKey}`
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:streamGenerateContent?alt=sse&key=${this.apiKey}`
 
     // systemInstruction is Gemini's dedicated field for the system prompt —
     // separate from the user message, gives better results than concatenating them.

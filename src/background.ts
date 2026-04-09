@@ -47,6 +47,8 @@ const DEFAULTS: StorageData = {
   geminiKey: '',
   githubToken: '',
   provider: 'gemini',
+  anthropicModel: '',
+  geminiModel: '',
   tone: 'balanced',
   mode: 'diff',
   popupOnboarded: '',

@@ -27,6 +27,8 @@
 
 import type { Adapter } from '../types'
 import { analyze, TooLargeError } from '../core/analyzer'
+import { listGeminiModels, DEFAULT_GEMINI_MODEL } from '../providers/gemini'
+import { listAnthropicModels, DEFAULT_ANTHROPIC_MODEL } from '../providers/anthropic'
 import { marked } from 'marked'
 import lottie from 'lottie-web'
 
@@ -83,6 +85,20 @@ export const createSidebar = (): HTMLElement => {
             <option value="anthropic">Claude</option>
             <option value="gemini">Gemini</option>
           </select>
+        </label>
+        <label class="revieu-label revieu-anthropic-model-label" style="display:none">
+          Model
+          <select class="revieu-select" data-setting="anthropicModel">
+            <option value="${DEFAULT_ANTHROPIC_MODEL}">Loading models…</option>
+          </select>
+          <span class="revieu-hint">Suggested: haiku-4.5</span>
+        </label>
+        <label class="revieu-label revieu-gemini-model-label" style="display:none">
+          Model
+          <select class="revieu-select" data-setting="geminiModel">
+            <option value="${DEFAULT_GEMINI_MODEL}">Loading models…</option>
+          </select>
+          <span class="revieu-hint">Suggested: 2.5-flash-lite</span>
         </label>
         <label class="revieu-label">
           Mode
@@ -200,12 +216,24 @@ export const createSidebar = (): HTMLElement => {
   // Save sidebar settings to storage when the user changes them.
   // Without this, loadSettings() resets them to defaults on every SPA navigation
   // (e.g. clicking "Files changed" changes the URL → init() → loadSettings()).
+  const anthropicModelLabel = sidebar.querySelector('.revieu-anthropic-model-label') as HTMLElement
+  const geminiModelLabel = sidebar.querySelector('.revieu-gemini-model-label') as HTMLElement
+  const providerSelect = sidebar.querySelector<HTMLSelectElement>('[data-setting="provider"]')!
+
+  const toggleModelLabels = (provider: string) => {
+    anthropicModelLabel.style.display = provider === 'anthropic' ? '' : 'none'
+    geminiModelLabel.style.display = provider === 'gemini' ? '' : 'none'
+    if (provider === 'anthropic') populateAnthropicModels()
+    if (provider === 'gemini') populateGeminiModels()
+  }
+
   sidebar.querySelectorAll<HTMLSelectElement>('.revieu-select').forEach((select) => {
     select.addEventListener('change', () => {
       const key = select.dataset.setting
       if (key) {
         chrome.runtime.sendMessage({ type: 'SAVE_SETTINGS', payload: { [key]: select.value } })
       }
+      if (key === 'provider') toggleModelLabels(select.value)
     })
   })
 
@@ -276,6 +304,45 @@ export const toggleSidebar = (open?: boolean): void => {
 // ===========================================================================
 
 /**
+ * Fetches models from a provider API and populates a select element.
+ * Preserves the currently selected value if it's still in the new list.
+ */
+const populateModelSelect = (
+  settingKey: string,
+  storageKeyForApiKey: string,
+  storageKeyForModel: string,
+  defaultModel: string,
+  fetchModels: (apiKey: string) => Promise<{ id: string; name: string }[]>
+): void => {
+  const select = document.querySelector<HTMLSelectElement>(`#${SIDEBAR_ID} [data-setting="${settingKey}"]`)
+  if (!select) return
+
+  chrome.runtime.sendMessage({ type: 'GET_SETTINGS' }, async (settings) => {
+    const apiKey = settings?.[storageKeyForApiKey]
+    // Priority: storage value > default (select.value is always the placeholder here)
+    const saved = settings?.[storageKeyForModel] || defaultModel
+    const models = apiKey ? await fetchModels(apiKey) : await fetchModels('')
+
+    select.innerHTML = models
+      .map((m) => `<option value="${m.id}">${m.name}</option>`)
+      .join('')
+
+    // Exact match first, then prefix match (API may return versioned IDs like
+    // "claude-haiku-4-5-20250414" while saved/default is "claude-haiku-4-5")
+    const exact = models.find((m) => m.id === saved)
+    const prefix = !exact ? models.find((m) => m.id.startsWith(saved)) : null
+    const match = exact ?? prefix
+    select.value = match?.id ?? models[0]?.id ?? defaultModel
+  })
+}
+
+const populateAnthropicModels = () =>
+  populateModelSelect('anthropicModel', 'anthropicKey', 'anthropicModel', DEFAULT_ANTHROPIC_MODEL, listAnthropicModels)
+
+const populateGeminiModels = () =>
+  populateModelSelect('geminiModel', 'geminiKey', 'geminiModel', DEFAULT_GEMINI_MODEL, listGeminiModels)
+
+/**
  * Loads saved settings from the background and applies them to the sidebar selectors.
  * Enables the "Analyze PR" button only if at least one API key is configured.
  */
@@ -293,6 +360,19 @@ export const loadSettings = (): void => {
       }
     }
 
+    // Show/hide model select based on current provider and populate dynamically
+    const currentProvider = document.querySelector<HTMLSelectElement>(`#${SIDEBAR_ID} [data-setting="provider"]`)?.value
+    const anthropicLabel = document.querySelector(`#${SIDEBAR_ID} .revieu-anthropic-model-label`) as HTMLElement
+    const geminiLabel = document.querySelector(`#${SIDEBAR_ID} .revieu-gemini-model-label`) as HTMLElement
+    if (anthropicLabel) {
+      anthropicLabel.style.display = currentProvider === 'anthropic' ? '' : 'none'
+      if (currentProvider === 'anthropic') populateAnthropicModels()
+    }
+    if (geminiLabel) {
+      geminiLabel.style.display = currentProvider === 'gemini' ? '' : 'none'
+      if (currentProvider === 'gemini') populateGeminiModels()
+    }
+
     // Button is disabled until at least one API key exists
     const btn = getAnalyzeButton()
     if (btn) {
@@ -303,13 +383,13 @@ export const loadSettings = (): void => {
 }
 
 /** Reads the current values from the sidebar selectors */
-export const getSelectedSettings = (): { mode: string; tone: string; provider: string } => {
+export const getSelectedSettings = (): { mode: string; tone: string; provider: string; anthropicModel: string; geminiModel: string } => {
   const get = (name: string) => {
     const el = document.querySelector<HTMLSelectElement>(`#${SIDEBAR_ID} [data-setting="${name}"]`)
     return el?.value ?? ''
   }
 
-  return { mode: get('mode'), tone: get('tone'), provider: get('provider') }
+  return { mode: get('mode'), tone: get('tone'), provider: get('provider'), anthropicModel: get('anthropicModel'), geminiModel: get('geminiModel') }
 }
 
 // ===========================================================================
@@ -330,6 +410,7 @@ export const getAnalyzeButton = (): HTMLButtonElement | null => {
 const getClearButton = (): HTMLButtonElement | null => {
   return document.querySelector(`#${SIDEBAR_ID} .revieu-clear-btn`)
 }
+
 
 /** Shows the clear button with animation */
 const showClearButton = (): void => {
@@ -398,7 +479,7 @@ export const wireAnalyzer = (adapter: Adapter): void => {
     chrome.runtime.sendMessage({ type: 'GET_SETTINGS' }, async (settings) => {
       if (!settings) return
 
-      const { mode, tone, provider } = getSelectedSettings()
+      const { mode, tone, provider, anthropicModel, geminiModel } = getSelectedSettings()
       // Pick the right API key based on the selected provider
       const apiKey = provider === 'anthropic' ? settings.anthropicKey : settings.geminiKey
 
@@ -425,7 +506,7 @@ export const wireAnalyzer = (adapter: Adapter): void => {
         if (loaderContainer && loaderVisible) {
           loaderContainer.insertAdjacentHTML('beforeend', '<p class="revieu-slow-hint">It\'s taking longer than usual...</p>')
         }
-      }, 20000)
+      }, 12000)
 
       try {
         await analyze({
@@ -434,6 +515,8 @@ export const wireAnalyzer = (adapter: Adapter): void => {
           tone,
           provider,
           apiKey,
+          anthropicModel,
+          geminiModel,
           onChunk: (text) => {
             // Remove loader on first chunk
             if (loaderVisible) {
@@ -457,6 +540,7 @@ export const wireAnalyzer = (adapter: Adapter): void => {
           destroyLoader()
           loaderVisible = false
         }
+
         // TooLargeError: diff exceeds the limit → show file selector
         if (err instanceof TooLargeError) {
           showingFileSelector = true
@@ -587,7 +671,7 @@ const renderFileSelector = (
 
     if (selectedFiles.length === 0) return
 
-    const { mode, tone, provider } = getSelectedSettings()
+    const { mode, tone, provider, geminiModel } = getSelectedSettings()
     const apiKey = provider === 'anthropic' ? settings.anthropicKey : settings.geminiKey
 
     output.innerHTML = ''
@@ -601,6 +685,7 @@ const renderFileSelector = (
         tone,
         provider,
         apiKey,
+        geminiModel,
         onChunk: (text) => {
           rawMarkdown += text
           output.innerHTML = marked.parse(rawMarkdown) as string

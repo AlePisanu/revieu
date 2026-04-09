@@ -39,6 +39,8 @@ export interface AnalyzeOptions {
   tone: string               // "balanced", "strict", "security"
   provider: string           // "anthropic" or "gemini"
   apiKey: string             // API key for the selected provider
+  anthropicModel?: string    // Claude model variant (e.g. "claude-haiku-4-5")
+  geminiModel?: string       // Gemini model variant (e.g. "gemini-2.5-flash-lite")
   onChunk: (text: string) => void  // callback for response streaming
   selectedFiles?: string[]   // files chosen by the user (if diff too large)
   initialFiles?: DiffFile[]  // already-parsed files (reused from file selector)
@@ -63,9 +65,9 @@ export class TooLargeError extends Error {
  * Pattern: FACTORY — hides the concrete object creation.
  * To add a provider (e.g. OpenAI) just add an `if` here.
  */
-const createProvider = (provider: string, apiKey: string): Provider => {
-  if (provider === 'anthropic') return new AnthropicProvider(apiKey)
-  if (provider === 'gemini') return new GeminiProvider(apiKey)
+const createProvider = (provider: string, apiKey: string, anthropicModel?: string, geminiModel?: string): Provider => {
+  if (provider === 'anthropic') return new AnthropicProvider(apiKey, anthropicModel)
+  if (provider === 'gemini') return new GeminiProvider(apiKey, geminiModel)
   throw new Error(`Unknown provider: ${provider}`)
 }
 
@@ -74,7 +76,7 @@ const createProvider = (provider: string, apiKey: string): Provider => {
  * Called by the sidebar when the user clicks "Analyze PR".
  */
 export const analyze = async (options: AnalyzeOptions): Promise<void> => {
-  const { adapter, mode, tone, provider, apiKey, onChunk, selectedFiles, initialFiles } = options
+  const { adapter, mode, tone, provider, apiKey, onChunk, selectedFiles, initialFiles, anthropicModel, geminiModel } = options
 
   // --- Step 1: Extract context and diff from the page ---
   // extractContext gets title/description from the PR DOM
@@ -145,6 +147,6 @@ export const analyze = async (options: AnalyzeOptions): Promise<void> => {
   // --- Step 5: Send to AI and stream the response ---
   // onChunk is called for each piece of text received,
   // the sidebar renders it in real time as markdown.
-  const ai = createProvider(provider, apiKey)
+  const ai = createProvider(provider, apiKey, anthropicModel, geminiModel)
   await ai.stream(systemPrompt, userMessage, onChunk)
 }

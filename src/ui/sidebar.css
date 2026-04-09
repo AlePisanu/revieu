@@ -233,15 +233,23 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  position: relative;
 
   font-size: 12px;
   font-weight: 500;
   color: var(--revieu-text-secondary);
 }
 
+.revieu-anthropic-model-label, .revieu-gemini-model-label {
+  margin-bottom: 10px;
+}
+
 /* SELECT */
 .revieu-select {
   margin-top: 6px;
+  width: 100%;
+
+  max-width: 180px;
 
   padding: 8px 10px;
 
@@ -255,6 +263,7 @@
 
   cursor: pointer;
   transition: all 0.15s ease;
+  text-overflow: ellipsis;
 }
 
 .revieu-select:hover {
@@ -265,6 +274,16 @@
   outline: none;
   border-color: var(--revieu-focus-border);
   box-shadow: 0 0 0 3px var(--revieu-focus-ring);
+}
+
+/* HINT */
+.revieu-hint {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--revieu-text-secondary);
 }
 
 /* BUTTON ROW */
@@ -884,3 +903,4 @@
   from { opacity: 0; transform: translateY(4px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+
