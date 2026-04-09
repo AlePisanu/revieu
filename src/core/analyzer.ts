@@ -30,7 +30,7 @@ import { GeminiProvider } from '../providers/gemini'
  * and the sidebar shows a file selector for the user to choose from.
  * This prevents sending huge prompts to the AI (expensive and slow).
  */
-const MAX_DIFF_LINES = 300
+const MAX_DIFF_LINES = 500
 
 /** Options passed from the sidebar to start the analysis */
 export interface AnalyzeOptions {

@@ -30,6 +30,7 @@ import { analyze, TooLargeError } from '../core/analyzer'
 import { listGeminiModels, DEFAULT_GEMINI_MODEL } from '../providers/gemini'
 import { listAnthropicModels, DEFAULT_ANTHROPIC_MODEL } from '../providers/anthropic'
 import { marked } from 'marked'
+import DOMPurify from 'dompurify'
 import lottie from 'lottie-web'
 
 // DOM element IDs for the sidebar — used by querySelector
@@ -528,7 +529,7 @@ export const wireAnalyzer = (adapter: Adapter): void => {
             // Re-renders all markdown on every chunk.
             // Not the most efficient, but `marked` is fast and ensures
             // the rendering is always consistent (no partial artifacts).
-            output.innerHTML = marked.parse(rawMarkdown) as string
+            output.innerHTML = DOMPurify.sanitize(marked.parse(rawMarkdown) as string)
             colorizeHeaders(output)
           },
         })
@@ -624,9 +625,9 @@ const renderFileSelector = (
   const list = files
     .map((f) => `
       <label class="revieu-file-option">
-        <input type="checkbox" value="${f.path}">
+        <input type="checkbox" value="${escapeHtml(f.path)}">
         <span class="revieu-file-info">
-          <span class="revieu-file-name">${f.path}</span>
+          <span class="revieu-file-name">${escapeHtml(f.path)}</span>
           <span class="revieu-line-count">${f.totalLines} lines</span>
         </span>
       </label>`)
@@ -688,7 +689,7 @@ const renderFileSelector = (
         geminiModel,
         onChunk: (text) => {
           rawMarkdown += text
-          output.innerHTML = marked.parse(rawMarkdown) as string
+          output.innerHTML = DOMPurify.sanitize(marked.parse(rawMarkdown) as string)
           colorizeHeaders(output)
         },
         selectedFiles,
@@ -708,6 +709,10 @@ const renderFileSelector = (
     }
   })
 }
+
+/** Escapes user-facing strings before inserting into innerHTML */
+const escapeHtml = (str: string): string =>
+  str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 
 const colorizeHeaders = (el: HTMLElement) => {
   el.querySelectorAll('h2').forEach((h) => {
