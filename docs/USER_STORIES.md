@@ -156,7 +156,7 @@ Click "Analyze PR"
       │
       ▼
 Yellow banner appears:
-"🔒 Private repo — partial context (DOM expand).
+"Private repo — partial context (DOM expand).
  For the full file, add a GitHub token in settings."
       │
       ▼

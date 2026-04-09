@@ -7,10 +7,10 @@ import * as path from 'path'
 // npm run dev passes --watch, npm run build does not
 const isWatch = process.argv.includes('--watch')
 
-// All output goes into dist/ — this is the folder loaded as unpacked extension in Chrome
+// All output goes into dist/ this is the folder loaded as unpacked extension in Chrome
 const distDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), 'dist')
 
-// esbuild only handles .ts files — static assets (manifest, HTML, CSS)
+// esbuild only handles .ts files static assets (manifest, HTML, CSS)
 // need to be copied manually into dist/
 const copyStaticFiles = () => {
   const staticFiles = [

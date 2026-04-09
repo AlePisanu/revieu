@@ -1,4 +1,4 @@
-/* ===== THEME TOKENS — scoped to #revieu-sidebar, NOT :root ===== */
+/* ===== THEME TOKENS scoped to #revieu-sidebar, NOT :root ===== */
 /* In a Chrome extension content script, :root = host page's <html>.
    Scoping to #revieu-sidebar keeps our vars isolated. */
 
@@ -16,7 +16,7 @@
   --revieu-text: #111111;
   --revieu-text-secondary: #52525b;
   --revieu-text-muted: #71717a;
-  --revieu-text-accent: #3b82f6;        /* blu standard moderno */
+  --revieu-text-accent: #3b82f6;
 
   /* header */
   --revieu-header-bg: #fafafa;
@@ -571,7 +571,7 @@
   padding: 0 7px;
 }
 
-/* BOTTOM BAR — fixed at bottom, never scrolls */
+/* BOTTOM BAR fixed at bottom */
 .revieu-bottom-bar {
   flex-shrink: 0;
   display: flex;

@@ -1,30 +1,3 @@
-/**
- * sidebar.ts — Sidebar UI injected into GitHub pages.
- *
- * Responsibilities:
- * 1. Create and inject the sidebar panel into GitHub's DOM
- * 2. Handle sidebar open/close
- * 3. Connect controls (mode, tone, provider) to the analyzer
- * 4. Render the AI review as HTML (markdown → HTML via `marked`)
- * 5. Handle the "diff too large" case by showing a file selector
- *
- * Pattern: CONTROLLER
- * This file is the glue between the UI (DOM) and the logic (analyzer).
- * It contains no business logic — it reads input from the UI, calls the
- * analyzer, and displays the result. All heavy lifting is delegated.
- *
- * How injection works:
- * The content script (content.ts) calls createSidebar() which:
- * - Creates a div with id "revieu-sidebar" and appends it to the body
- * - Creates a side tab to open/close the sidebar
- * - CSS styles come from sidebar.css injected by the manifest
- *
- * Note on cloneNode in wireAnalyzer:
- * When the extension is reloaded during development, Chrome injects
- * a new content script WITHOUT removing the old one. Each script adds
- * a listener to the button → multiple clicks. The clone removes all listeners.
- */
-
 import type { Adapter } from '../types'
 import { analyze, TooLargeError } from '../core/analyzer'
 import { listGeminiModels, DEFAULT_GEMINI_MODEL } from '../providers/gemini'
@@ -33,32 +6,14 @@ import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import lottie from 'lottie-web'
 
-// DOM element IDs for the sidebar — used by querySelector
 const SIDEBAR_ID = 'revieu-sidebar'
 const TAB_ID = 'revieu-tab'
-/** Sidebar width — also used to shift the body left */
 const SIDEBAR_WIDTH = '380px'
 
 const PR_ICON = '<svg class="revieu-btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M7 8.83a3.001 3.001 0 1 0-2 0v6.34a3.001 3.001 0 1 0 2 0zM6 5a1 1 0 1 0 0 2a1 1 0 0 0 0-2m0 12a1 1 0 1 0 0 2a1 1 0 0 0 0-2m11-1.83a3.001 3.001 0 1 0 2 0V10.4A5.4 5.4 0 0 0 13.6 5h-.186l.293-.293a1 1 0 0 0-1.414-1.414l-2 2a1 1 0 0 0 0 1.414l2 2a1 1 0 1 0 1.414-1.414L13.414 7h.186a3.4 3.4 0 0 1 3.4 3.4zM17 18a1 1 0 1 1 2 0a1 1 0 0 1-2 0" clip-rule="evenodd"/></svg>';
 const TRASH_ICON = '<svg class="revieu-btn-icon" width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/><path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/></svg>';
 
-// ===========================================================================
-// SIDEBAR CREATION
-// ===========================================================================
-
-/**
- * Creates and injects the sidebar into the page DOM.
- * If already present (SPA navigation), returns the existing one.
- *
- * The sidebar contains:
- * - Header with title and close button
- * - Controls: mode (diff/full), tone, provider
- * - "Analyze PR" button (disabled until an API key is configured)
- * - Output area where the review is rendered
- * - Footer with "Copy" button and token estimate (hidden until review completes)
- */
 export const createSidebar = (): HTMLElement => {
-  // Prevent double injection (GitHub is a SPA, content script may re-run)
   const existing = document.getElementById(SIDEBAR_ID)
   if (existing) return existing
 
@@ -161,7 +116,6 @@ export const createSidebar = (): HTMLElement => {
   </div>
 `
 
-  // Side tab — always visible on the right edge, opens sidebar on click
   const tab = document.createElement('div')
   tab.id = TAB_ID
 
@@ -204,19 +158,14 @@ export const createSidebar = (): HTMLElement => {
     }
   })
 
-  // Close when clicking outside
   document.addEventListener('click', (e) => {
     if (!settingsPopover.contains(e.target as Node) && e.target !== settingsTrigger) {
       closePopover()
     }
   })
 
-  // Prevent clicks inside the popover from closing it
   settingsPopover.addEventListener('click', (e) => e.stopPropagation())
 
-  // Save sidebar settings to storage when the user changes them.
-  // Without this, loadSettings() resets them to defaults on every SPA navigation
-  // (e.g. clicking "Files changed" changes the URL → init() → loadSettings()).
   const anthropicModelLabel = sidebar.querySelector('.revieu-anthropic-model-label') as HTMLElement
   const geminiModelLabel = sidebar.querySelector('.revieu-gemini-model-label') as HTMLElement
   const providerSelect = sidebar.querySelector<HTMLSelectElement>('[data-setting="provider"]')!
@@ -238,7 +187,6 @@ export const createSidebar = (): HTMLElement => {
     })
   })
 
-  // Wire clear button — persistent, no need for cloneNode
   const clearBtn = getClearButton()
   clearBtn?.addEventListener('click', () => {
     const output = getOutputElement()
@@ -247,7 +195,6 @@ export const createSidebar = (): HTMLElement => {
     hideClearButton()
   })
 
-  // Initialize Lottie animation in the empty state
   const lottieContainer = sidebar.querySelector('.revieu-lottie-container') as HTMLElement
   if (lottieContainer) {
     lottie.loadAnimation({
@@ -259,28 +206,17 @@ export const createSidebar = (): HTMLElement => {
     })
   }
 
-  // Hide onboarding if already dismissed
   chrome.storage.sync.get('sidebarOnboarded', (res) => {
     if (res.sidebarOnboarded) {
       sidebar.querySelector('.revieu-onboarding-tips')?.classList.add('revieu-hidden-el')
     }
   })
 
-  // Starts closed by default
   sidebar.classList.add('revieu-hidden')
 
   return sidebar
 }
 
-// ===========================================================================
-// OPEN / CLOSE
-// ===========================================================================
-
-/**
- * Opens or closes the sidebar.
- * When open, shifts the body left (marginRight) to make room.
- * @param open - true to open, false to close, undefined to toggle
- */
 export const toggleSidebar = (open?: boolean): void => {
   const sidebar = document.getElementById(SIDEBAR_ID)
   const tab = document.getElementById(TAB_ID)
@@ -291,7 +227,6 @@ export const toggleSidebar = (open?: boolean): void => {
   if (shouldOpen) {
     sidebar.classList.remove('revieu-hidden')
     tab.classList.add('revieu-tab-hidden')
-    // Shift the body so the sidebar doesn't cover the content
     document.body.style.marginRight = SIDEBAR_WIDTH
   } else {
     sidebar.classList.add('revieu-hidden')
@@ -300,14 +235,6 @@ export const toggleSidebar = (open?: boolean): void => {
   }
 }
 
-// ===========================================================================
-// SETTINGS
-// ===========================================================================
-
-/**
- * Fetches models from a provider API and populates a select element.
- * Preserves the currently selected value if it's still in the new list.
- */
 const populateModelSelect = (
   settingKey: string,
   storageKeyForApiKey: string,
@@ -320,7 +247,6 @@ const populateModelSelect = (
 
   chrome.runtime.sendMessage({ type: 'GET_SETTINGS' }, async (settings) => {
     const apiKey = settings?.[storageKeyForApiKey]
-    // Priority: storage value > default (select.value is always the placeholder here)
     const saved = settings?.[storageKeyForModel] || defaultModel
     const models = apiKey ? await fetchModels(apiKey) : await fetchModels('')
 
@@ -343,16 +269,10 @@ const populateAnthropicModels = () =>
 const populateGeminiModels = () =>
   populateModelSelect('geminiModel', 'geminiKey', 'geminiModel', DEFAULT_GEMINI_MODEL, listGeminiModels)
 
-/**
- * Loads saved settings from the background and applies them to the sidebar selectors.
- * Enables the "Analyze PR" button only if at least one API key is configured.
- */
 export const loadSettings = (): void => {
   chrome.runtime.sendMessage({ type: 'GET_SETTINGS' }, (settings) => {
     if (!settings) return
 
-    // Apply saved values to each select (mode, tone, provider)
-    // The data-setting attribute on the HTML matches the key in storage
     const selects = document.querySelectorAll<HTMLSelectElement>(`#${SIDEBAR_ID} .revieu-select`)
     for (const select of selects) {
       const key = select.dataset.setting as string
@@ -361,7 +281,6 @@ export const loadSettings = (): void => {
       }
     }
 
-    // Show/hide model select based on current provider and populate dynamically
     const currentProvider = document.querySelector<HTMLSelectElement>(`#${SIDEBAR_ID} [data-setting="provider"]`)?.value
     const anthropicLabel = document.querySelector(`#${SIDEBAR_ID} .revieu-anthropic-model-label`) as HTMLElement
     const geminiLabel = document.querySelector(`#${SIDEBAR_ID} .revieu-gemini-model-label`) as HTMLElement
@@ -374,7 +293,6 @@ export const loadSettings = (): void => {
       if (currentProvider === 'gemini') populateGeminiModels()
     }
 
-    // Button is disabled until at least one API key exists
     const btn = getAnalyzeButton()
     if (btn) {
       const hasKey = settings.anthropicKey || settings.geminiKey
@@ -383,7 +301,6 @@ export const loadSettings = (): void => {
   })
 }
 
-/** Reads the current values from the sidebar selectors */
 export const getSelectedSettings = (): { mode: string; tone: string; provider: string; anthropicModel: string; geminiModel: string } => {
   const get = (name: string) => {
     const el = document.querySelector<HTMLSelectElement>(`#${SIDEBAR_ID} [data-setting="${name}"]`)
@@ -393,37 +310,26 @@ export const getSelectedSettings = (): { mode: string; tone: string; provider: s
   return { mode: get('mode'), tone: get('tone'), provider: get('provider'), anthropicModel: get('anthropicModel'), geminiModel: get('geminiModel') }
 }
 
-// ===========================================================================
-// DOM HELPERS
-// ===========================================================================
-
-/** Returns the container where the review is rendered */
 export const getOutputElement = (): HTMLElement | null => {
   return document.querySelector(`#${SIDEBAR_ID} .revieu-output`)
 }
 
-/** Returns the "Analyze PR" button */
 export const getAnalyzeButton = (): HTMLButtonElement | null => {
   return document.querySelector(`#${SIDEBAR_ID} .revieu-analyze-btn`)
 }
 
-/** Returns the "Clear" button */
 const getClearButton = (): HTMLButtonElement | null => {
   return document.querySelector(`#${SIDEBAR_ID} .revieu-clear-btn`)
 }
 
-
-/** Shows the clear button with animation */
 const showClearButton = (): void => {
   getClearButton()?.classList.add('revieu-clear-visible')
 }
 
-/** Hides the clear button with animation */
 const hideClearButton = (): void => {
   getClearButton()?.classList.remove('revieu-clear-visible')
 }
 
-/** Shows a Lottie loader animation in the output area. Returns a destroy function. */
 const showLoader = (output: HTMLElement): (() => void) => {
   output.innerHTML = '<div class="revieu-loader-container"></div>'
   const container = output.querySelector('.revieu-loader-container') as HTMLElement
@@ -440,34 +346,16 @@ const showLoader = (output: HTMLElement): (() => void) => {
   }
 }
 
-// ===========================================================================
-// ANALYZE BUTTON → ANALYZER WIRING
-// ===========================================================================
-
-/**
- * Connects the "Analyze PR" button click to the entire review flow.
- *
- * Flow on click:
- * 1. Reads settings from the background (API key, mode, tone, provider)
- * 2. Resets the output and shows "Analyzing..."
- * 3. Calls analyze() with an onChunk callback that:
- *    - Accumulates the raw markdown received via streaming
- *    - Converts it to HTML with `marked` and injects it into the output
- * 4. If the diff is too large → shows the file selector
- * 5. If there's an error → shows the error message
- * 6. When the review finishes → shows the footer with "Copy review" and token estimate
- */
+// Clones the button to strip any duplicate listeners accumulated across
+// extension reloads (Chrome injects a new content script without removing the old one)
 export const wireAnalyzer = (adapter: Adapter): void => {
   const oldBtn = getAnalyzeButton()
   if (!oldBtn) return
 
-  // Clone the button to remove any duplicate listeners
-  // (see note in the file comment above)
   const btn = oldBtn.cloneNode(true) as HTMLButtonElement
   oldBtn.replaceWith(btn)
 
   btn.addEventListener('click', () => {
-    // Hide onboarding tips permanently on first analyze
     const onboarding = document.querySelector(`#${SIDEBAR_ID} .revieu-onboarding-tips`)
     if (onboarding && !onboarding.classList.contains('revieu-hidden-el')) {
       onboarding.classList.add('revieu-hidden-el')
@@ -481,7 +369,6 @@ export const wireAnalyzer = (adapter: Adapter): void => {
       if (!settings) return
 
       const { mode, tone, provider, anthropicModel, geminiModel } = getSelectedSettings()
-      // Pick the right API key based on the selected provider
       const apiKey = provider === 'anthropic' ? settings.anthropicKey : settings.geminiKey
 
       if (!apiKey) {
@@ -496,12 +383,10 @@ export const wireAnalyzer = (adapter: Adapter): void => {
 
       const destroyLoader = showLoader(output)
 
-      // Accumulates raw markdown — needed for copy and token estimate
       let rawMarkdown = ''
       let showingFileSelector = false
       let loaderVisible = true
 
-      // Show a hint if the AI takes too long to respond
       const slowTimer = setTimeout(() => {
         const loaderContainer = output.querySelector('.revieu-loader-container')
         if (loaderContainer && loaderVisible) {
@@ -519,16 +404,12 @@ export const wireAnalyzer = (adapter: Adapter): void => {
           anthropicModel,
           geminiModel,
           onChunk: (text) => {
-            // Remove loader on first chunk
             if (loaderVisible) {
               clearTimeout(slowTimer)
               destroyLoader()
               loaderVisible = false
             }
             rawMarkdown += text
-            // Re-renders all markdown on every chunk.
-            // Not the most efficient, but `marked` is fast and ensures
-            // the rendering is always consistent (no partial artifacts).
             output.innerHTML = DOMPurify.sanitize(marked.parse(rawMarkdown) as string)
             colorizeHeaders(output)
           },
@@ -542,7 +423,6 @@ export const wireAnalyzer = (adapter: Adapter): void => {
           loaderVisible = false
         }
 
-        // TooLargeError: diff exceeds the limit → show file selector
         if (err instanceof TooLargeError) {
           showingFileSelector = true
           renderFileSelector(output, err.files, adapter, settings)
@@ -563,18 +443,8 @@ export const wireAnalyzer = (adapter: Adapter): void => {
   })
 }
 
-// ===========================================================================
-// FOOTER (copy + token estimate)
-// ===========================================================================
-
-/**
- * Rough token estimate — ~4 characters per token.
- * Not precise (each model tokenizes differently),
- * but gives an idea of the review cost.
- */
 const estimateTokens = (text: string): number => Math.ceil(text.length / 4)
 
-/** Shows the footer with the copy button and token estimate */
 const showFooter = (reviewText: string): void => {
   const footer = document.querySelector(`#${SIDEBAR_ID} .revieu-footer`)
   const hint = document.querySelector(`#${SIDEBAR_ID} .revieu-token-hint`)
@@ -583,7 +453,6 @@ const showFooter = (reviewText: string): void => {
   hint.textContent = `~${estimateTokens(reviewText)} tokens`
   footer.classList.remove('revieu-hidden-el')
 
-  // Wire the copy button — uses the browser's Clipboard API
   const copyBtn = footer.querySelector('.revieu-copy-btn') as HTMLButtonElement
   copyBtn.onclick = async () => {
     await navigator.clipboard.writeText(reviewText)
@@ -592,25 +461,15 @@ const showFooter = (reviewText: string): void => {
   }
 }
 
-/** Hides the footer (before a new analysis) */
 const hideFooter = (): void => {
   const footer = document.querySelector(`#${SIDEBAR_ID} .revieu-footer`)
   if (footer) footer.classList.add('revieu-hidden-el')
 }
 
-// ===========================================================================
-// FILE SELECTOR (when the diff is too large)
-// ===========================================================================
+/** Escapes user-facing strings before inserting into innerHTML */
+const escapeHtml = (str: string): string =>
+  str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 
-/**
- * Shows a list of checkboxes with the PR files.
- * The user picks which files to analyze.
- *
- * When they click "Analyze selected":
- * - Takes the selected files
- * - Re-calls analyze() with selectedFiles and initialFiles
- *   (initialFiles avoids re-extracting the diff from scratch)
- */
 const renderFileSelector = (
   output: HTMLElement,
   files: import('../types').DiffFile[],
@@ -663,7 +522,6 @@ const renderFileSelector = (
     toggleAllBtn.textContent = allChecked ? 'Select all' : 'Deselect all'
   })
 
-
   const selectedBtn = output.querySelector('.revieu-analyze-selected-btn') as HTMLButtonElement
 
   selectedBtn.addEventListener('click', async () => {
@@ -693,7 +551,6 @@ const renderFileSelector = (
           colorizeHeaders(output)
         },
         selectedFiles,
-        // Pass already-parsed files to avoid re-extracting the diff
         initialFiles: files,
       })
       if (analyzeBtn) {
@@ -709,10 +566,6 @@ const renderFileSelector = (
     }
   })
 }
-
-/** Escapes user-facing strings before inserting into innerHTML */
-const escapeHtml = (str: string): string =>
-  str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 
 const colorizeHeaders = (el: HTMLElement) => {
   el.querySelectorAll('h2').forEach((h) => {
