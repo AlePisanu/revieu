@@ -1,6 +1,10 @@
+<p align="center">
+  <img src="icons/logo-128.png" alt="Revieu" width="80" />
+</p>
+
 # Revieu
 
-> AI-powered code review sidebar for GitHub — runs in your browser, analyzes PR diffs with Claude or Gemini, streams suggestions in real time.
+> AI-powered code review sidebar for GitHub which runs in your browser, analyzes PR diffs with Claude or Gemini, streams suggestions in real time.
 
 ![Version](https://img.shields.io/badge/version-0.1.0-blue)
 ![Manifest](https://img.shields.io/badge/manifest-v3-green)
@@ -14,7 +18,7 @@ Revieu adds a sidebar to any GitHub Pull Request page. With one click it reads t
 
 No backend. No account. No context switching. The review appears inline while you're on the PR.
 
-Unlike copy-paste tools, Revieu brings the review directly into your GitHub workflow — no tab switching, no manual prompting, streaming results inline.
+Unlike copy-paste tools, Revieu brings the review directly into your GitHub workflow, no tab switching, no manual prompting, streaming results inline.
 
 ---
 
@@ -22,11 +26,11 @@ Unlike copy-paste tools, Revieu brings the review directly into your GitHub work
 
 - Streams AI code review in real time
 - Reads PR title and description for better context
-- **Diff only** mode — fast, minimal token usage
-- **Full context** mode — sends the full file for deeper analysis
+- **Diff only** mode: fast, minimal token usage
+- **Full context** mode: sends the full file for deeper analysis
   - Public repos: fetches via `raw.githubusercontent.com` (no auth needed)
   - Private repos: expands DOM context automatically, or uses an optional GitHub token
-- **Dependency map** — analyzes imports between changed files, adds relationship context to the prompt
+- **Dependency map**: analyzes imports between changed files, adds relationship context to the prompt
 - Tone selector: `Balanced` / `Strict` / `Security-focused`
 - Provider selector: `Claude` (Anthropic) or `Gemini Flash` (free tier, no billing required)
 - Handles large diffs: lets you select which files to analyze
@@ -69,7 +73,7 @@ Revieu needs at least one AI provider key. Both have free options:
 | Anthropic Claude | Credits on signup | [console.anthropic.com](https://console.anthropic.com/settings/keys) |
 | Google Gemini Flash | Genuinely free, no billing required | [aistudio.google.com](https://aistudio.google.com/app/apikey) |
 
-Keys are stored in `chrome.storage.sync` — encrypted by Chrome, never sent to any server of ours. Requests go directly from your browser to the provider's API.
+Keys are stored in `chrome.storage.sync` encrypted by Chrome, never sent to any server of ours. Requests go directly from your browser to the provider's API.
 
 ---
 
@@ -78,7 +82,7 @@ Keys are stored in `chrome.storage.sync` — encrypted by Chrome, never sent to 
 | Version | What ships |
 |---------|-----------|
 | **v0.1** | Project setup, manifest, build pipeline |
-| **v0.2** | GitHub adapter — diff extraction from DOM |
+| **v0.2** | GitHub adapter: diff extraction from DOM |
 | **v0.3** | Sidebar UI (no AI yet) |
 | **v0.4** | Anthropic provider, first working review |
 | **v0.5** | Full context mode |
@@ -93,11 +97,11 @@ Full roadmap: [docs/ROADMAP.md](./docs/ROADMAP.md)
 ## Tech stack
 
 - Chrome Extension Manifest v3
-- TypeScript — no framework
+- TypeScript: no framework
 - esbuild for bundling
 - Anthropic Claude API (streaming)
 - Google Gemini API (streaming, free tier)
-- WebLLM (v3 roadmap — local inference, no API key)
+- WebLLM (v3 roadmap: local inference, no API key)
 
 ---
 
