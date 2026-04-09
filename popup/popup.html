@@ -252,24 +252,31 @@
   </div>
 
   <div class="field">
-    <label for="anthropic-key">Anthropic API Key</label>
-    <input type="password" id="anthropic-key" placeholder="sk-ant-...">
-    <p class="hint">Get one at <a href="https://console.anthropic.com/settings/keys"
-        target="_blank">console.anthropic.com</a> (no free plan for APIs)</p>
+    <label for="gemini-key">Gemini API Key <span style="font-weight:400;color:var(--popup-text-muted)">(required — at least one of Gemini or Anthropic)</span></label>
+    <input type="password" id="gemini-key" placeholder="AI...">
+    <p class="hint">Free, no billing (with limits) — create one here <a href="https://aistudio.google.com/app/apikey"
+        target="_blank" rel="noopener noreferrer">aistudio.google.com</a></p>
   </div>
 
   <div class="field">
-    <label for="gemini-key">Gemini API Key</label>
-    <input type="password" id="gemini-key" placeholder="AI...">
-    <p class="hint">Free, no billing — <a href="https://aistudio.google.com/app/apikey"
-        target="_blank">aistudio.google.com</a></p>
+    <label for="anthropic-key">Anthropic API Key <span style="font-weight:400;color:var(--popup-text-muted)">(required — at least one of Gemini or Anthropic)</span></label>
+    <input type="password" id="anthropic-key" placeholder="sk-ant-...">
+    <p class="hint">Get one at <a href="https://console.anthropic.com/settings/keys"
+        target="_blank" rel="noopener noreferrer">console.anthropic.com</a> (no free plan for APIs)</p>
   </div>
 
   <div class="field">
     <label for="github-token">GitHub Token <span style="font-weight:400;color:var(--popup-text-muted)">(optional)</span></label>
     <input type="password" id="github-token" placeholder="ghp_...">
-    <p class="hint">Required for private repos in Full context mode. Needs <code>repo</code> scope — <a
-        href="https://github.com/settings/tokens/new?scopes=repo" target="_blank">create one here</a></p>
+    <p class="hint">
+      Required for private repositories in Full context mode.<br>
+      Make sure to check the <strong><code>repo</code></strong> checkbox 
+      ("Full control of private repositories").<br>
+      <a href="https://github.com/settings/tokens/new?scopes=repo" 
+        target="_blank" rel="noopener">
+        Create token here
+      </a>
+    </p>
   </div>
 
   <button id="save-btn">Save</button>
