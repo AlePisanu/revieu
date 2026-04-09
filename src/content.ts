@@ -60,7 +60,7 @@ init()
 
 // --- SPA navigation handling ---
 // Track the last seen URL. When it changes, re-initialize.
-let lastUrl = window.location.href
+let lastUrl = window.location.
 let pollTimer: ReturnType<typeof setInterval> | null = null
 
 /**
