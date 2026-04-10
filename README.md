@@ -70,7 +70,7 @@ Revieu needs at least one AI provider key. Both have free options:
 
 | Provider | Free tier | Get key |
 |----------|-----------|---------|
-| Anthropic Claude | Credits on signup | [console.anthropic.com](https://console.anthropic.com/settings/keys) |
+| Anthropic Claude | No | [console.anthropic.com](https://console.anthropic.com/settings/keys) |
 | Google Gemini Flash | Genuinely free, no billing required | [aistudio.google.com](https://aistudio.google.com/app/apikey) |
 
 Keys are stored in `chrome.storage.sync` encrypted by Chrome, never sent to any server of ours. Requests go directly from your browser to the provider's API.
@@ -79,18 +79,7 @@ Keys are stored in `chrome.storage.sync` encrypted by Chrome, never sent to any 
 
 ## Roadmap
 
-| Version | What ships |
-|---------|-----------|
-| **v0.1** | Project setup, manifest, build pipeline |
-| **v0.2** | GitHub adapter: diff extraction from DOM |
-| **v0.3** | Sidebar UI (no AI yet) |
-| **v0.4** | Anthropic provider, first working review |
-| **v0.5** | Full context mode |
-| **v0.6** | Gemini provider |
-| **v0.7** | Dependency map |
-| **v1.0** | Chrome Web Store release |
-
-Full roadmap: [docs/ROADMAP.md](./docs/ROADMAP.md)
+Full roadmap (NOT UPDATED): [docs/ROADMAP.md](./docs/ROADMAP.md)
 
 ---
 
