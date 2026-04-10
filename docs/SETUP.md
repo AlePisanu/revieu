@@ -13,7 +13,7 @@
 ## Install
 
 ```bash
-git clone https://github.com/yourusername/revieu
+git clone https://github.com/AlePisanu/revieu.git
 cd revieu
 npm install
 ```
@@ -23,6 +23,7 @@ npm install
 ## Development
 
 ```bash
+npm run build
 npm run dev
 ```
 
