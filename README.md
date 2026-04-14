@@ -55,7 +55,7 @@ Unlike copy-paste tools, Revieu brings the review directly into your GitHub work
 ## Installation (dev)
 
 ```bash
-git clone https://github.com/yourusername/revieu
+git clone https://github.com/AlePisanu/revieu
 cd revieu
 npm install
 npm run build
