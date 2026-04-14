@@ -3,7 +3,7 @@
   "name": "Revieu",
   "version": "0.1.0",
   "description": "AI-powered code review sidebar for GitHub",
-  "permissions": ["storage", "activeTab", "scripting"],
+  "permissions": ["storage", "activeTab"],
   "host_permissions": [
     "https://github.com/*",
     "https://patch-diff.githubusercontent.com/*",
