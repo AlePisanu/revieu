@@ -12,6 +12,9 @@
 
 ---
 
+<img width="1304" height="824" alt="output-onlinepngtools" src="https://github.com/user-attachments/assets/f3ff056b-d4a0-4adb-bffe-07d16b9baff6" />
+
+
 ## What it does
 
 Revieu adds a sidebar to any GitHub Pull Request page. With one click it reads the diff, sends it to an AI model, and streams a code review directly in your browser.
