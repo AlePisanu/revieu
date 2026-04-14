@@ -71,7 +71,7 @@ If you are located in the EEA, you have the following rights:
 - **Right to restriction of processing** — You can stop using the Extension at any time.
 - **Right to data portability** — Your data is stored locally and under your control.
 
-Since Revieu does not collect or store personal data on any server, most GDPR data subject requests are satisfied by default. For any questions, contact **[YOUR_EMAIL]**.
+Since Revieu does not collect or store personal data on any server, most GDPR data subject requests are satisfied by default. For any questions, contact **revieuinfo@gmail.com**.
 
 ## 9. Your Rights Under CCPA (California)
 
@@ -92,4 +92,4 @@ We may update this Privacy Policy from time to time. Changes will be reflected i
 
 ## 12. Contact
 
-For any questions or concerns about this Privacy Policy, contact: **[YOUR_EMAIL]**
+For any questions or concerns about this Privacy Policy, contact: **revieuinfo@gmail.com**
