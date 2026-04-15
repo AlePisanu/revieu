@@ -1,3 +1,5 @@
+declare const __FIREFOX__: boolean
+
 interface StorageData {
   anthropicKey: string
   geminiKey: string
@@ -98,3 +100,61 @@ chrome.runtime.onMessage.addListener((message: Message, _sender, sendResponse) =
     return true
   }
 })
+
+// Firefox blocks fetch() from content scripts via the page's CSP.
+// All AI API calls are proxied here via a long-lived port so chunks
+// can be streamed back to the content script without losing the UX.
+if (__FIREFOX__) {
+  interface StreamRequest {
+    type: 'STREAM_REQUEST'
+    url: string
+    method: string
+    headers: Record<string, string>
+    body: string
+  }
+
+  chrome.runtime.onConnect.addListener((port) => {
+    if (port.name !== 'ai-stream') return
+
+    port.onMessage.addListener(async (msg: StreamRequest) => {
+      if (msg.type !== 'STREAM_REQUEST') return
+
+      let response: Response
+      try {
+        response = await fetch(msg.url, {
+          method: msg.method,
+          headers: msg.headers,
+          body: msg.body,
+        })
+      } catch (e) {
+        port.postMessage({ type: 'ERROR', message: String(e) })
+        return
+      }
+
+      if (!response.ok) {
+        let body = ''
+        try { body = await response.text() } catch { /* ignore */ }
+        port.postMessage({ type: 'ERROR', status: response.status, message: body })
+        return
+      }
+
+      const reader = response.body?.getReader()
+      if (!reader) {
+        port.postMessage({ type: 'ERROR', message: 'No response stream' })
+        return
+      }
+
+      const decoder = new TextDecoder()
+      try {
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+          port.postMessage({ type: 'CHUNK', text: decoder.decode(value, { stream: true }) })
+        }
+        port.postMessage({ type: 'DONE' })
+      } catch (e) {
+        port.postMessage({ type: 'ERROR', message: String(e) })
+      }
+    })
+  })
+}

@@ -1,5 +1,31 @@
 import type { Provider } from '../types'
 
+declare const __FIREFOX__: boolean
+
+// Firefox blocks fetch() from content scripts via GitHub's CSP.
+// This helper proxies the request through the background port instead.
+async function fetchViaPort(
+  url: string,
+  options: { method: string; headers: Record<string, string>; body: string },
+  onChunk: (text: string) => void
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const port = chrome.runtime.connect({ name: 'ai-stream' })
+    port.onMessage.addListener((msg: { type: string; text?: string; status?: number; message?: string }) => {
+      if (msg.type === 'CHUNK') {
+        onChunk(msg.text ?? '')
+      } else if (msg.type === 'DONE') {
+        port.disconnect()
+        resolve()
+      } else if (msg.type === 'ERROR') {
+        port.disconnect()
+        reject(Object.assign(new Error(msg.message ?? `HTTP ${msg.status}`), { httpStatus: msg.status }))
+      }
+    })
+    port.postMessage({ type: 'STREAM_REQUEST', url, ...options })
+  })
+}
+
 export const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash-lite'
 
 export async function listGeminiModels(
@@ -75,6 +101,7 @@ export class GeminiProvider implements Provider {
   ): Promise<void> {
     // Gemini auth is via query param, not header
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:streamGenerateContent?alt=sse&key=${this.apiKey}`
+    const headers = { 'Content-Type': 'application/json' }
 
     const payload = JSON.stringify({
       systemInstruction: {
@@ -93,17 +120,57 @@ export class GeminiProvider implements Provider {
       },
     })
 
+    // SSE parsing shared between Chrome and Firefox paths
+    let buffer = ''
+    const parseRawChunk = (raw: string) => {
+      buffer += raw
+      const lines = buffer.split('\n')
+      buffer = lines.pop() ?? ''
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue
+        const data = line.slice(6)
+        if (data === '[DONE]') return
+        try {
+          const event = JSON.parse(data)
+          const text = event?.candidates?.[0]?.content?.parts?.[0]?.text
+          if (text) onChunk(text)
+        } catch { /* malformed lines ignore */ }
+      }
+    }
+
+    if (__FIREFOX__) {
+      // Firefox path: proxy through background port to bypass GitHub's CSP
+      for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+        await sleep(lastRequestAt + MIN_REQUEST_INTERVAL_MS - Date.now())
+        lastRequestAt = Date.now()
+
+        try {
+          await fetchViaPort(url, { method: 'POST', headers, body: payload }, parseRawChunk)
+          return
+        } catch (e: unknown) {
+          const httpStatus = (e as { httpStatus?: number }).httpStatus
+          if (httpStatus !== 429) {
+            if (httpStatus === 400) throw new Error('Invalid Gemini API key. Check your key in settings.')
+            throw new Error(`Gemini API error (${httpStatus ?? 0}): ${(e as Error).message}`)
+          }
+          if (attempt === MAX_RETRIES) {
+            const delayMs = Math.min(MAX_RETRY_DELAY_MS, BASE_RETRY_DELAY_MS * (attempt + 1))
+            throw new Error(`Gemini rate limit exceeded after automatic retries. Wait about ${Math.ceil(delayMs / 1000)}s and try again.`)
+          }
+          await sleep(Math.min(MAX_RETRY_DELAY_MS, BASE_RETRY_DELAY_MS * (attempt + 1)))
+        }
+      }
+      return
+    }
+
+    // Chrome path: direct fetch (not subject to GitHub's CSP)
     let response: Response | null = null
 
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
       await sleep(lastRequestAt + MIN_REQUEST_INTERVAL_MS - Date.now())
 
       lastRequestAt = Date.now()
-      response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: payload,
-      })
+      response = await fetch(url, { method: 'POST', headers, body: payload })
 
       if (response.ok) break
       if (response.status !== 429) break
@@ -137,31 +204,11 @@ export class GeminiProvider implements Provider {
     if (!reader) throw new Error('No response stream available')
 
     const decoder = new TextDecoder()
-    let buffer = ''
 
     while (true) {
       const { done, value } = await reader.read()
       if (done) break
-
-      buffer += decoder.decode(value, { stream: true })
-
-      const lines = buffer.split('\n')
-      buffer = lines.pop() ?? ''
-
-      for (const line of lines) {
-        if (!line.startsWith('data: ')) continue
-
-        const data = line.slice(6)
-        if (data === '[DONE]') return
-
-        try {
-          const event = JSON.parse(data)
-          const text = event?.candidates?.[0]?.content?.parts?.[0]?.text
-          if (text) onChunk(text)
-        } catch {
-          // Malformed lines ignore
-        }
-      }
+      parseRawChunk(decoder.decode(value, { stream: true }))
     }
   }
 }

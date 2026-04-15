@@ -6,7 +6,10 @@
   "type": "module",
   "scripts": {
     "dev": "node build.js --watch",
-    "build": "node build.js",
+    "dev:firefox": "node build.js --watch --firefox",
+    "build": "node build.js && node build.js --firefox",
+    "build:chrome": "node build.js",
+    "build:firefox": "node build.js --firefox",
     "test": "vitest run",
     "test:watch": "vitest"
   },

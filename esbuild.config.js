@@ -12,9 +12,7 @@ const buildOptions = {
     'popup/popup.ts',    // API key setup popup
   ],
   bundle: true,          // Inline all imports into each output file
-  outdir: path.resolve(__dirname, 'dist'),
   platform: 'browser',
-  target: 'chrome120',
   format: 'iife',        // Content scripts don't support ESM must use IIFE
   minify: !isWatch,      // Minify only in production
   sourcemap: isWatch,    // Sourcemaps only in dev for easier debugging
