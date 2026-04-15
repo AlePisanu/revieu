@@ -38,3 +38,14 @@ export interface Adapter {
     source: 'raw' | 'api' | 'expand' | null
   }>
 }
+
+export interface LLMResponse {
+    message: string;
+}
+
+export type Phase = "loading" | "ready" | "error";
+
+export interface Message {
+    role: "user" | "assistant";
+    content: string;
+}
