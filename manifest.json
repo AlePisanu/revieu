@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
   "name": "Revieu",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "AI-powered code review sidebar for GitHub",
-  "permissions": ["storage", "activeTab"],
+  "permissions": ["storage"],
   "host_permissions": [
     "https://github.com/*",
     "https://patch-diff.githubusercontent.com/*",
@@ -28,13 +28,12 @@
     "default_icon": {
       "16": "icons/logo-16.png",
       "32": "icons/logo-32.png",
-      "34": "icons/logo-34.png"
+      "48": "icons/logo-48.png"
     }
   },
   "icons": {
     "16": "icons/logo-16.png",
     "32": "icons/logo-32.png",
-    "34": "icons/logo-34.png",
     "48": "icons/logo-48.png",
     "128": "icons/logo-128.png"
   },

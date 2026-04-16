@@ -195,7 +195,8 @@ export class GitHubAdapter implements Adapter {
       if (!match) return null
 
       const [, owner, repo, pr] = match
-      const diffUrl = `https://github.com/${owner}/${repo}/pull/${pr}.diff`
+      // GitHub redirects /pull/N.diff to patch-diff.githubusercontent.com — hit it directly.
+      const diffUrl = `https://patch-diff.githubusercontent.com/raw/${owner}/${repo}/pull/${pr}.diff`
 
       const response: {
         ok: boolean
