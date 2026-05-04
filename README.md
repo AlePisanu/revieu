@@ -6,7 +6,7 @@
 
 > AI-powered code review sidebar for GitHub which runs in your browser, analyzes PR diffs with Claude or Gemini, streams suggestions in real time.
 
-![Version](https://img.shields.io/badge/version-0.1.0-blue)
+[![Chrome Web Store](https://img.shields.io/badge/Chrome_Web_Store-Available-blue?logo=googlechrome&logoColor=white)](https://chromewebstore.google.com/detail/revieu/fgdmalabmpkedklgjjclbdjpjjkccbah)
 ![Manifest](https://img.shields.io/badge/manifest-v3-green)
 ![License](https://img.shields.io/badge/license-MIT-gray)
 
