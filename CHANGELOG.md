@@ -5,6 +5,19 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.2.0] - 2026-06-09
+
+### Added
+- **OpenRouter support**: Use any model available via OpenRouter (GPT-4o, Claude 3.5 Sonnet, etc.)
+- Dynamic model listing for OpenRouter models based on API key
+- Automatic selection of default model for OpenRouter (`openai/gpt-4o-mini`)
+
+### Fixed
+- OpenRouter API key persistence issues due to inconsistent naming
+- Missing host permissions for `openrouter.ai` in manifest
+- Sidebar UI logic to properly handle OpenRouter model visibility and API key verification
+- File selector support for OpenRouter provider when handling large PRs
+
 ## [0.1.0] 2026-04-09
 
 ### Added

@@ -1,8 +1,9 @@
 interface StorageData {
   anthropicKey: string
   geminiKey: string
+  openrouterKey: string
   githubToken: string
-  provider: 'anthropic' | 'gemini'
+  provider: 'anthropic' | 'gemini' | 'openrouter'
   tone: 'balanced' | 'strict' | 'security'
   mode: 'diff' | 'full'
   popupOnboarded: string
@@ -13,10 +14,12 @@ interface StorageData {
 const DEFAULTS: StorageData = {
   anthropicKey: '',
   geminiKey: '',
+  openrouterKey: '',
   githubToken: '',
   provider: 'gemini',
   anthropicModel: '',
   geminiModel: '',
+  openrouterModel: '',
   tone: 'balanced',
   mode: 'diff',
   popupOnboarded: '',
@@ -33,7 +36,15 @@ chrome.runtime.onMessage.addListener((message: Message, _sender, sendResponse) =
 
   if (message.type === 'GET_SETTINGS') {
     chrome.storage.sync.get(DEFAULTS, (data) => {
-      sendResponse(data as StorageData)
+      const settings = data as StorageData
+      // Backward compatibility for old key casing
+      if (!settings.openrouterKey && (data as any).openRouterKey) {
+        settings.openrouterKey = (data as any).openRouterKey
+      }
+      if (!settings.openrouterModel && (data as any).openRouterModel) {
+        settings.openrouterModel = (data as any).openRouterModel
+      }
+      sendResponse(settings)
     })
     return true
   }

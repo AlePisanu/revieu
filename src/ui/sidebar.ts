@@ -2,6 +2,7 @@ import type { Adapter } from '../types'
 import { analyze, TooLargeError } from '../core/analyzer'
 import { listGeminiModels, DEFAULT_GEMINI_MODEL } from '../providers/gemini'
 import { listAnthropicModels, DEFAULT_ANTHROPIC_MODEL } from '../providers/anthropic'
+import { listOpenRouterModels, DEFAULT_OPENROUTER_MODEL } from '../providers/openrouter'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import lottie from 'lottie-web'
@@ -40,6 +41,7 @@ export const createSidebar = (): HTMLElement => {
           <select class="revieu-select" data-setting="provider">
             <option value="anthropic">Claude</option>
             <option value="gemini">Gemini</option>
+            <option value="openrouter">OpenRouter</option>
           </select>
         </label>
         <label class="revieu-label revieu-anthropic-model-label" style="display:none">
@@ -55,6 +57,12 @@ export const createSidebar = (): HTMLElement => {
             <option value="${DEFAULT_GEMINI_MODEL}">Loading models…</option>
           </select>
           <span class="revieu-hint">Suggested: 2.5-flash-lite</span>
+        </label>
+        <label class="revieu-label revieu-openrouter-model-label" style="display:none">
+          Model
+          <select class="revieu-select" data-setting="openrouterModel">
+            <option value="openai/gpt-4o-mini">Loading models…</option>
+          </select>
         </label>
         <label class="revieu-label">
           Mode
@@ -168,13 +176,16 @@ export const createSidebar = (): HTMLElement => {
 
   const anthropicModelLabel = sidebar.querySelector('.revieu-anthropic-model-label') as HTMLElement
   const geminiModelLabel = sidebar.querySelector('.revieu-gemini-model-label') as HTMLElement
+  const openrouterModelLabel = sidebar.querySelector('.revieu-openrouter-model-label') as HTMLElement
   const providerSelect = sidebar.querySelector<HTMLSelectElement>('[data-setting="provider"]')!
 
   const toggleModelLabels = (provider: string) => {
     anthropicModelLabel.style.display = provider === 'anthropic' ? '' : 'none'
     geminiModelLabel.style.display = provider === 'gemini' ? '' : 'none'
+    openrouterModelLabel.style.display = provider === 'openrouter' ? '' : 'none'
     if (provider === 'anthropic') populateAnthropicModels()
     if (provider === 'gemini') populateGeminiModels()
+    if (provider === 'openrouter') populateOpenRouterModels()
   }
 
   sidebar.querySelectorAll<HTMLSelectElement>('.revieu-select').forEach((select) => {
@@ -183,7 +194,10 @@ export const createSidebar = (): HTMLElement => {
       if (key) {
         chrome.runtime.sendMessage({ type: 'SAVE_SETTINGS', payload: { [key]: select.value } })
       }
-      if (key === 'provider') toggleModelLabels(select.value)
+      if (key === 'provider') {
+        toggleModelLabels(select.value)
+        updateAnalyzeButtonState()
+      }
     })
   })
 
@@ -215,6 +229,22 @@ export const createSidebar = (): HTMLElement => {
   sidebar.classList.add('revieu-hidden')
 
   return sidebar
+}
+
+const updateAnalyzeButtonState = (): void => {
+  const btn = getAnalyzeButton()
+  if (!btn) return
+
+  const { provider } = getSelectedSettings()
+  chrome.runtime.sendMessage({ type: 'GET_SETTINGS' }, (settings) => {
+    if (!settings) return
+    const apiKey =
+      provider === 'anthropic' ? settings.anthropicKey :
+      provider === 'gemini' ? settings.geminiKey :
+      provider === 'openrouter' ? settings.openrouterKey :
+      ''
+    btn.disabled = !apiKey
+  })
 }
 
 export const toggleSidebar = (open?: boolean): void => {
@@ -269,6 +299,9 @@ const populateAnthropicModels = () =>
 const populateGeminiModels = () =>
   populateModelSelect('geminiModel', 'geminiKey', 'geminiModel', DEFAULT_GEMINI_MODEL, listGeminiModels)
 
+const populateOpenRouterModels = () =>
+  populateModelSelect('openrouterModel', 'openrouterKey', 'openrouterModel', DEFAULT_OPENROUTER_MODEL, listOpenRouterModels)
+
 export const loadSettings = (): void => {
   chrome.runtime.sendMessage({ type: 'GET_SETTINGS' }, (settings) => {
     if (!settings) return
@@ -284,6 +317,7 @@ export const loadSettings = (): void => {
     const currentProvider = document.querySelector<HTMLSelectElement>(`#${SIDEBAR_ID} [data-setting="provider"]`)?.value
     const anthropicLabel = document.querySelector(`#${SIDEBAR_ID} .revieu-anthropic-model-label`) as HTMLElement
     const geminiLabel = document.querySelector(`#${SIDEBAR_ID} .revieu-gemini-model-label`) as HTMLElement
+    const openrouterLabel = document.querySelector(`#${SIDEBAR_ID} .revieu-openrouter-model-label`) as HTMLElement
     if (anthropicLabel) {
       anthropicLabel.style.display = currentProvider === 'anthropic' ? '' : 'none'
       if (currentProvider === 'anthropic') populateAnthropicModels()
@@ -292,22 +326,26 @@ export const loadSettings = (): void => {
       geminiLabel.style.display = currentProvider === 'gemini' ? '' : 'none'
       if (currentProvider === 'gemini') populateGeminiModels()
     }
+    if (openrouterLabel) {
+      openrouterLabel.style.display = currentProvider === 'openrouter' ? '' : 'none'
+      if (currentProvider === 'openrouter') populateOpenRouterModels()
+    }
 
     const btn = getAnalyzeButton()
     if (btn) {
-      const hasKey = settings.anthropicKey || settings.geminiKey
+      const hasKey = settings.anthropicKey || settings.geminiKey || settings.openrouterKey
       btn.disabled = !hasKey
     }
   })
 }
 
-export const getSelectedSettings = (): { mode: string; tone: string; provider: string; anthropicModel: string; geminiModel: string } => {
+export const getSelectedSettings = (): { mode: string; tone: string; provider: string; anthropicModel: string; geminiModel: string; openrouterModel: string } => {
   const get = (name: string) => {
     const el = document.querySelector<HTMLSelectElement>(`#${SIDEBAR_ID} [data-setting="${name}"]`)
     return el?.value ?? ''
   }
 
-  return { mode: get('mode'), tone: get('tone'), provider: get('provider'), anthropicModel: get('anthropicModel'), geminiModel: get('geminiModel') }
+  return { mode: get('mode'), tone: get('tone'), provider: get('provider'), anthropicModel: get('anthropicModel'), geminiModel: get('geminiModel'), openrouterModel: get('openrouterModel') }
 }
 
 export const getOutputElement = (): HTMLElement | null => {
@@ -368,8 +406,11 @@ export const wireAnalyzer = (adapter: Adapter): void => {
     chrome.runtime.sendMessage({ type: 'GET_SETTINGS' }, async (settings) => {
       if (!settings) return
 
-      const { mode, tone, provider, anthropicModel, geminiModel } = getSelectedSettings()
-      const apiKey = provider === 'anthropic' ? settings.anthropicKey : settings.geminiKey
+      const { mode, tone, provider, anthropicModel, geminiModel, openrouterModel } = getSelectedSettings()
+      const apiKey =
+        provider === 'anthropic' ? settings.anthropicKey
+        : provider === 'gemini' ? settings.geminiKey
+        : settings.openrouterKey
 
       if (!apiKey) {
         output.innerHTML = '<p class="revieu-error">No API key configured. Click the Revieu icon in the toolbar to add one.</p>'
@@ -403,6 +444,7 @@ export const wireAnalyzer = (adapter: Adapter): void => {
           apiKey,
           anthropicModel,
           geminiModel,
+          openrouterModel,
           onChunk: (text) => {
             if (loaderVisible) {
               clearTimeout(slowTimer)
@@ -530,8 +572,11 @@ const renderFileSelector = (
 
     if (selectedFiles.length === 0) return
 
-    const { mode, tone, provider, geminiModel } = getSelectedSettings()
-    const apiKey = provider === 'anthropic' ? settings.anthropicKey : settings.geminiKey
+    const { mode, tone, provider, anthropicModel, geminiModel, openrouterModel } = getSelectedSettings()
+    const apiKey =
+      provider === 'anthropic' ? settings.anthropicKey
+      : provider === 'gemini' ? settings.geminiKey
+      : settings.openrouterKey
 
     output.innerHTML = ''
     hideClearButton()
@@ -544,7 +589,9 @@ const renderFileSelector = (
         tone,
         provider,
         apiKey,
+        anthropicModel,
         geminiModel,
+        openrouterModel,
         onChunk: (text) => {
           rawMarkdown += text
           output.innerHTML = DOMPurify.sanitize(marked.parse(rawMarkdown) as string)

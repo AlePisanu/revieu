@@ -2,6 +2,7 @@
 <html lang="en">
 
 <head>
+
   <meta charset="UTF-8">
   <title>Revieu</title>
   <style>
@@ -212,7 +213,7 @@
       width: 18px;
       height: 18px;
       border-radius: 50%;
-      background: var(--popup-btn-bg);
+      background: var(--popup-bg);
       color: var(--popup-btn-text);
       font-size: 10px;
       font-weight: 600;
@@ -232,7 +233,7 @@
     <source srcset="../icons/logo-white.png" media="(prefers-color-scheme: dark)">
     <img src="../icons/logo-black.png" alt="Revieu" class="revieu-logo-popup">
   </picture>
-  
+
   <div class="onboarding hidden" id="onboarding">
     <p class="onboarding-title">Get started</p>
     <ol class="onboarding-steps">
@@ -264,15 +265,20 @@
     <p class="hint">Get one at <a href="https://console.anthropic.com/settings/keys"
         target="_blank" rel="noopener noreferrer">console.anthropic.com</a> (no free plan for APIs)</p>
   </div>
-
+  <div class="field">
+    <label for="openrouter-key">OpenRouter API Key <span style="font-weight:400;color:var(--popup-text-muted)">(optional)</span></label>
+    <input type="password" id="openrouter-key" placeholder="sk-or-...">
+    <p class="hint">Get one at <a href="https://openrouter.ai/keys"
+        target="_blank" rel="noopener noreferrer">openrouter.ai</a></p>
+  </div>
   <div class="field">
     <label for="github-token">GitHub Token <span style="font-weight:400;color:var(--popup-text-muted)">(optional)</span></label>
     <input type="password" id="github-token" placeholder="ghp_...">
     <p class="hint">
       Required for private repositories in Full context mode.<br>
-      Make sure to check the <strong><code>repo</code></strong> checkbox 
+      Make sure to check the <strong><code>repo</code></strong> checkbox
       ("Full control of private repositories").<br>
-      <a href="https://github.com/settings/tokens/new?scopes=repo" 
+      <a href="https://github.com/settings/tokens/new?scopes=repo"
         target="_blank" rel="noopener">
         Create token here
       </a>

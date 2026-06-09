@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Revieu",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "AI-powered code review sidebar for GitHub",
   "permissions": ["storage"],
   "host_permissions": [
@@ -10,7 +10,8 @@
     "https://raw.githubusercontent.com/*",
     "https://api.github.com/*",
     "https://api.anthropic.com/*",
-    "https://generativelanguage.googleapis.com/*"
+    "https://generativelanguage.googleapis.com/*",
+    "https://openrouter.ai/*"
   ],
   "background": {
     "service_worker": "src/background.js"

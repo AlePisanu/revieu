@@ -240,7 +240,7 @@
   color: var(--revieu-text-secondary);
 }
 
-.revieu-anthropic-model-label, .revieu-gemini-model-label {
+.revieu-anthropic-model-label, .revieu-gemini-model-label, .revieu-openrouter-model-label {
   margin-bottom: 10px;
 }
 

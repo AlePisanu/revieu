@@ -3,6 +3,7 @@ import { parseDiff } from './parser'
 import { buildSystemPrompt, buildUserMessage } from './prompt'
 import { AnthropicProvider } from '../providers/anthropic'
 import { GeminiProvider } from '../providers/gemini'
+import { OpenRouterProvider } from '../providers/openrouter'
 
 const MAX_DIFF_LINES = 500
 
@@ -14,6 +15,7 @@ export interface AnalyzeOptions {
   apiKey: string
   anthropicModel?: string
   geminiModel?: string
+  openrouterModel?: string
   onChunk: (text: string) => void
   selectedFiles?: string[]
   initialFiles?: DiffFile[]
@@ -30,14 +32,15 @@ export class TooLargeError extends Error {
   }
 }
 
-const createProvider = (provider: string, apiKey: string, anthropicModel?: string, geminiModel?: string): Provider => {
+const createProvider = (provider: string, apiKey: string, anthropicModel?: string, geminiModel?: string, openrouterModel?: string): Provider => {
   if (provider === 'anthropic') return new AnthropicProvider(apiKey, anthropicModel)
   if (provider === 'gemini') return new GeminiProvider(apiKey, geminiModel)
+  if (provider === 'openrouter') return new OpenRouterProvider(apiKey, openrouterModel)
   throw new Error(`Unknown provider: ${provider}`)
 }
 
 export const analyze = async (options: AnalyzeOptions): Promise<void> => {
-  const { adapter, mode, tone, provider, apiKey, onChunk, selectedFiles, initialFiles, anthropicModel, geminiModel } = options
+  const { adapter, mode, tone, provider, apiKey, onChunk, selectedFiles, initialFiles, anthropicModel, geminiModel, openrouterModel } = options
 
   const context = adapter.extractContext()
 
@@ -89,6 +92,6 @@ export const analyze = async (options: AnalyzeOptions): Promise<void> => {
   const systemPrompt = buildSystemPrompt(tone)
   const userMessage = buildUserMessage(context, filesWithChanges, mode)
 
-  const ai = createProvider(provider, apiKey, anthropicModel, geminiModel)
+  const ai = createProvider(provider, apiKey, anthropicModel, geminiModel, openrouterModel)
   await ai.stream(systemPrompt, userMessage, onChunk)
 }
