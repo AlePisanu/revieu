@@ -53,8 +53,10 @@ describe('analyze', () => {
   })
 
   it('throws TooLargeError before streaming when the diff exceeds the file limit', async () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
     const adapter = createAdapter([
-      makeRawDiff('src/large.ts', Array.from({ length: 301 }, (_, index) => `line ${index + 1}`)),
+      makeRawDiff('src/large.ts', Array.from({ length: 501 }, (_, index) => `line ${index + 1}`)),
     ])
 
     await expect(analyze({
@@ -65,6 +67,8 @@ describe('analyze', () => {
       apiKey: 'test-key',
       onChunk: () => {},
     })).rejects.toBeInstanceOf(TooLargeError)
+
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 
   it('reuses the initial file list when analyzing selected files', async () => {

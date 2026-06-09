@@ -244,6 +244,20 @@
   margin-bottom: 10px;
 }
 
+.revieu-openrouter-model-label {
+  flex-wrap: wrap;
+}
+
+.revieu-provider-disclaimer {
+  width: 100%;
+  display: block;
+  margin-top: 8px;
+  font-size: 11px;
+  line-height: 1.4;
+  font-style: italic;
+  color: var(--revieu-text-muted);
+}
+
 /* SELECT */
 .revieu-select {
   margin-top: 6px;

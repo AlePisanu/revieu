@@ -61,8 +61,9 @@ export const createSidebar = (): HTMLElement => {
         <label class="revieu-label revieu-openrouter-model-label" style="display:none">
           Model
           <select class="revieu-select" data-setting="openrouterModel">
-            <option value="openai/gpt-4o-mini">Loading models…</option>
+            <option value="${DEFAULT_OPENROUTER_MODEL}">Loading models…</option>
           </select>
+          <span class="revieu-provider-disclaimer">Note: Output quality and formatting may vary significantly depending on the selected model.</span>
         </label>
         <label class="revieu-label">
           Mode

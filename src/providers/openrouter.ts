@@ -1,7 +1,7 @@
 import type { Provider } from '../types'
 
 const API_URL = 'https://openrouter.ai/api/v1/chat/completions'
-export const DEFAULT_OPENROUTER_MODEL = 'openai/gpt-4o-mini' // sensible default
+export const DEFAULT_OPENROUTER_MODEL = 'openai/gpt-4o-mini'
 const MAX_TOKENS = 4096
 
 export async function listOpenRouterModels(
